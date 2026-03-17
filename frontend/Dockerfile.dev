@@ -1,0 +1,14 @@
+FROM node:20-alpine
+
+# Pre-create the node_modules anonymous volume path and assign it to the node user
+# This allows the volume to inherit these permissions when Docker mounts it.
+RUN mkdir -p /app/node_modules && chown -R node:node /app
+
+# Use non-root user provided by the Node image for security
+USER node
+
+WORKDIR /app
+
+EXPOSE 5173
+
+CMD ["sh", "-c", "npm install && npm run dev -- --host 0.0.0.0"]

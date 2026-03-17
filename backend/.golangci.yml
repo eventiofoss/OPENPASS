@@ -1,0 +1,31 @@
+run:
+  timeout: 5m
+  issues-exit-code: 1
+  tests: true
+
+linters:
+  disable-all: true
+  enable:
+    - errcheck
+    - govet
+    - staticcheck
+    - unparam
+    - ineffassign
+    - typecheck
+    - gosimple
+    - unused
+    - gofmt
+    - goimports
+    - misspell
+
+linters-settings:
+  govet:
+    check-shadowing: true
+  errcheck:
+    check-type-assertions: true
+    check-blank: true
+
+issues:
+  exclude-use-default: false
+  max-issues-per-linter: 0
+  max-same-issues: 0

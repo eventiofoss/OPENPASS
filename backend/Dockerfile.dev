@@ -1,0 +1,17 @@
+FROM golang:1.22-alpine
+
+# Install air for live reloading
+RUN go install github.com/air-verse/air@v1.52.3 \
+    && rm -rf /go/pkg /go/src # Clean cache layers
+
+# Create a non-root user for security
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+
+WORKDIR /app
+
+# Switch to non-root user
+USER appuser
+
+EXPOSE 8080
+
+CMD ["air", "-c", ".air.toml"]

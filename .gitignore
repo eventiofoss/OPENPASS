@@ -1,1 +1,26 @@
-/backend/.env
+# IDEs and OS
+.DS_Store
+.vscode/
+.idea/
+
+# General Environment
+.env
+.env.*
+!.env.example
+*.pem
+
+# Backend (Go + Air)
+backend/tmp/
+backend/bin/
+backend/*.exe
+backend/*.exe~
+backend/*.dll
+backend/*.so
+backend/*.dylib
+backend/*.test
+backend/*.out
+
+# Frontend (SvelteKit / Node)
+frontend/node_modules/
+frontend/.svelte-kit/
+frontend/build/
