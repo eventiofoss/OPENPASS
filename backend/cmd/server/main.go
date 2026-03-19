@@ -1,18 +1,16 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"log/slog"
 	"os"
 	"os/signal"
 	"syscall"
-	"time"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/jackc/pgx/v5"
 
 	"github.com/v4sud3v/eventio/backend/internal/database"
+	"github.com/v4sud3v/eventio/backend/internal/handlers"
 )
 
 // setupLogger initializes a structured JSON logger
@@ -41,22 +39,20 @@ func main() {
 		DisableStartupMessage: true,
 	})
 
-	app.Get("/api/health", func(c *fiber.Ctx) error {
-		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-		defer cancel()
+	// Global check on boot to wait for DB and run migrations
+	db := database.Connect(connStr)
 
-		conn, err := pgx.Connect(ctx, connStr)
+	app.Get("/api/health", func(c *fiber.Ctx) error {
+		sqlDB, err := db.DB()
 		if err != nil {
-			slog.Error("Database connection failed during healthcheck", slog.String("error", err.Error()))
+			slog.Error("Failed to get database instance during healthcheck", slog.String("error", err.Error()))
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 				"status":  "error",
 				"message": "Database connection failed",
 			})
 		}
-		defer conn.Close(ctx)
 
-		err = conn.Ping(ctx)
-		if err != nil {
+		if err := sqlDB.Ping(); err != nil {
 			slog.Error("Database ping failed during healthcheck", slog.String("error", err.Error()))
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 				"status":  "error",
@@ -70,11 +66,13 @@ func main() {
 		})
 	})
 
-	// Global check on boot to wait for DB
-	dbConn := database.Connect(connStr)
-	if dbConn != nil {
-		dbConn.Close(context.Background())
-	}
+	// Initialize handlers with database connection
+	h := &handlers.Handler{DB: db}
+
+	// Authentication routes group
+	authGroup := app.Group("/api/auth")
+	authGroup.Post("/register", h.Register)
+	authGroup.Post("/login", h.Login)
 
 	// Graceful shutdown setup
 	c := make(chan os.Signal, 1)
