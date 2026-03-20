@@ -13,7 +13,7 @@
 
 ## 🔐 Module 2: Auth (Organizer-Only)
 **Purpose**: JWT authentication for event organizers only
-**Files**: `internal/auth/`
+**Files**: `internal/middleware/`
 - POST `/api/register` - organizer signup
 - POST `/api/login` - JWT token generation  
 - Middleware: `AuthRequired()` - protect all organizer routes

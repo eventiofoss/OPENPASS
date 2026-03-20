@@ -4,7 +4,7 @@ import (
 	"strings"
 	"time"
 
-	apiauth "github.com/eventiofoss/eventio/backend/internal/auth"
+	"github.com/eventiofoss/eventio/backend/internal/middleware"
 	"github.com/eventiofoss/eventio/backend/internal/models"
 	"github.com/gofiber/fiber/v2"
 	"golang.org/x/crypto/bcrypt"
@@ -115,9 +115,9 @@ func (h *Handler) Login(c *fiber.Ctx) error {
 		)
 	}
 
-	signedToken, err := apiauth.GenerateToken(
+	signedToken, err := middleware.GenerateToken(
 		organizer,
-		apiauth.DefaultTokenTTL,
+		middleware.DefaultTokenTTL,
 	)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(
@@ -126,9 +126,9 @@ func (h *Handler) Login(c *fiber.Ctx) error {
 	}
 
 	c.Cookie(&fiber.Cookie{
-		Name:     apiauth.SessionCookieName,
+		Name:     middleware.SessionCookieName,
 		Value:    signedToken,
-		Expires:  time.Now().Add(apiauth.DefaultTokenTTL),
+		Expires:  time.Now().Add(middleware.DefaultTokenTTL),
 		HTTPOnly: true,
 		SameSite: fiber.CookieSameSiteStrictMode,
 	})
