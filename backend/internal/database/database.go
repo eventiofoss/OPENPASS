@@ -46,6 +46,6 @@ func Connect(connStr string) *gorm.DB {
 // autoMigrate runs all database migrations for registered models.
 func autoMigrate(db *gorm.DB) error {
 	return db.AutoMigrate(
-		&models.Organizer{},
+		&models.User{},
 	)
 }

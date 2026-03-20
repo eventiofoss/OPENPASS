@@ -48,14 +48,15 @@ func (h *Handler) Register(c *fiber.Ctx) error {
 	}
 
 	// 7. Prepare the Database Object
-	organizer := models.Organizer{
+	user := models.User{
 		Name:         strings.TrimSpace(req.Name),
 		Email:        cleanEmail,
 		PasswordHash: string(hashedPassword),
+		Role:         "user", // Default role for new accounts
 	}
 
 	// 8. Save to Database
-	result := h.DB.Create(&organizer)
+	result := h.DB.Create(&user)
 	if result.Error != nil {
 		if strings.Contains(result.Error.Error(), "duplicate key value") {
 			return c.Status(fiber.StatusConflict).JSON(fiber.Map{"error": "An account with this email already exists"})
@@ -66,7 +67,7 @@ func (h *Handler) Register(c *fiber.Ctx) error {
 	// 9. Send Success Response
 	return c.Status(fiber.StatusCreated).JSON(fiber.Map{
 		"message": "Account created successfully",
-		"user":    organizer,
+		"user":    user,
 	})
 }
 
@@ -87,8 +88,8 @@ func (h *Handler) Login(c *fiber.Ctx) error {
 	cleanEmail := strings.ToLower(strings.TrimSpace(req.Email))
 
 	// 3. Find the user in the database
-	var organizer models.Organizer
-	result := h.DB.Where("email = ?", cleanEmail).First(&organizer)
+	var user models.User
+	result := h.DB.Where("email = ?", cleanEmail).First(&user)
 	if result.Error != nil {
 		// SECURITY: Never tell the user "Email not found". It allows hackers to guess emails.
 		// Always return a generic "Invalid credentials".
@@ -96,15 +97,16 @@ func (h *Handler) Login(c *fiber.Ctx) error {
 	}
 
 	// 4. Compare the password with the hash
-	err := bcrypt.CompareHashAndPassword([]byte(organizer.PasswordHash), []byte(req.Password))
+	err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(req.Password))
 	if err != nil {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Invalid credentials"})
 	}
 
-	// 5. Generate the JWT VIP Pass
+	// 5. Generate the JWT with user claims including role
 	claims := jwt.MapClaims{
-		"sub": organizer.ID,                                  // Subject (The User ID)
-		"exp": time.Now().Add(time.Hour * 24).Unix(),         // Expires in 24 hours
+		"sub":  user.ID,                                       // Subject (The User ID)
+		"role": user.Role,                                     // User role for RBAC
+		"exp":  time.Now().Add(time.Hour * 24).Unix(),         // Expires in 24 hours
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 
