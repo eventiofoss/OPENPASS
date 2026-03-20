@@ -9,8 +9,8 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 
-	"github.com/v4sud3v/eventio/backend/internal/database"
-	"github.com/v4sud3v/eventio/backend/internal/handlers"
+	"github.com/eventiofoss/eventio/backend/internal/api"
+	"github.com/eventiofoss/eventio/backend/internal/database"
 )
 
 // setupLogger initializes a structured JSON logger
@@ -67,7 +67,7 @@ func main() {
 	})
 
 	// Initialize handlers with database connection
-	h := &handlers.Handler{DB: db}
+	h := &api.Handler{DB: db}
 
 	// Authentication routes group
 	authGroup := app.Group("/api/auth")

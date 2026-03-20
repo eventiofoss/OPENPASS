@@ -5,7 +5,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/v4sud3v/eventio/backend/internal/models"
+	"github.com/eventiofoss/eventio/backend/internal/models"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
@@ -25,13 +25,13 @@ func Connect(connStr string) *gorm.DB {
 		})
 		if err == nil {
 			slog.Info("Successfully connected to the database")
-			
+
 			// Run auto-migrations
 			if err := autoMigrate(db); err != nil {
 				slog.Error("Auto-migration failed", slog.String("error", err.Error()))
 				os.Exit(1)
 			}
-			
+
 			return db
 		}
 
@@ -46,6 +46,12 @@ func Connect(connStr string) *gorm.DB {
 // autoMigrate runs all database migrations for registered models.
 func autoMigrate(db *gorm.DB) error {
 	return db.AutoMigrate(
-		&models.User{},
+		&models.Organizer{},
+		&models.Event{},
+		&models.FormField{},
+		&models.Attendee{},
+		&models.Payment{},
+		&models.CheckIn{},
+		&models.Export{},
 	)
 }

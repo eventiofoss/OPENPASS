@@ -1,30 +1,30 @@
-package handlers
+package api
 
 import (
 	"os"
 	"strings"
 	"time"
 
+	"github.com/eventiofoss/eventio/backend/internal/models"
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/v4sud3v/eventio/backend/internal/models"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
 
-// Handler holds dependencies for request handlers
+// Handler holds dependencies for request handlers.
 type Handler struct {
 	DB *gorm.DB
 }
 
-// 1. Define the Expected Input
+// RegisterRequest is the expected organizer signup payload.
 type RegisterRequest struct {
 	Name     string `json:"name"`
 	Email    string `json:"email"`
 	Password string `json:"password"`
 }
 
-// 2. The Main Function
+// Register creates an organizer account.
 func (h *Handler) Register(c *fiber.Ctx) error {
 	req := new(RegisterRequest)
 
@@ -48,15 +48,15 @@ func (h *Handler) Register(c *fiber.Ctx) error {
 	}
 
 	// 7. Prepare the Database Object
-	user := models.User{
+	organizer := models.Organizer{
 		Name:         strings.TrimSpace(req.Name),
 		Email:        cleanEmail,
 		PasswordHash: string(hashedPassword),
-		Role:         "user", // Default role for new accounts
+		Role:         models.OrganizerRoleOrganizer,
 	}
 
 	// 8. Save to Database
-	result := h.DB.Create(&user)
+	result := h.DB.Create(&organizer)
 	if result.Error != nil {
 		if strings.Contains(result.Error.Error(), "duplicate key value") {
 			return c.Status(fiber.StatusConflict).JSON(fiber.Map{"error": "An account with this email already exists"})
@@ -66,18 +66,18 @@ func (h *Handler) Register(c *fiber.Ctx) error {
 
 	// 9. Send Success Response
 	return c.Status(fiber.StatusCreated).JSON(fiber.Map{
-		"message": "Account created successfully",
-		"user":    user,
+		"message":   "Account created successfully",
+		"organizer": organizer,
 	})
 }
 
-// 1. Define the Expected Login Input
+// LoginRequest is the expected organizer login payload.
 type LoginRequest struct {
 	Email    string `json:"email"`
 	Password string `json:"password"`
 }
 
-// 2. The Login Method
+// Login authenticates an organizer and issues a session cookie.
 func (h *Handler) Login(c *fiber.Ctx) error {
 	req := new(LoginRequest)
 
@@ -88,8 +88,8 @@ func (h *Handler) Login(c *fiber.Ctx) error {
 	cleanEmail := strings.ToLower(strings.TrimSpace(req.Email))
 
 	// 3. Find the user in the database
-	var user models.User
-	result := h.DB.Where("email = ?", cleanEmail).First(&user)
+	var organizer models.Organizer
+	result := h.DB.Where("email = ?", cleanEmail).First(&organizer)
 	if result.Error != nil {
 		// SECURITY: Never tell the user "Email not found". It allows hackers to guess emails.
 		// Always return a generic "Invalid credentials".
@@ -97,16 +97,16 @@ func (h *Handler) Login(c *fiber.Ctx) error {
 	}
 
 	// 4. Compare the password with the hash
-	err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(req.Password))
+	err := bcrypt.CompareHashAndPassword([]byte(organizer.PasswordHash), []byte(req.Password))
 	if err != nil {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Invalid credentials"})
 	}
 
 	// 5. Generate the JWT with user claims including role
 	claims := jwt.MapClaims{
-		"sub":  user.ID,                                       // Subject (The User ID)
-		"role": user.Role,                                     // User role for RBAC
-		"exp":  time.Now().Add(time.Hour * 24).Unix(),         // Expires in 24 hours
+		"sub":  organizer.ID,                          // Subject (The Organizer ID)
+		"role": organizer.Role,                        // Organizer role for RBAC
+		"exp":  time.Now().Add(time.Hour * 24).Unix(), // Expires in 24 hours
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 
@@ -126,9 +126,9 @@ func (h *Handler) Login(c *fiber.Ctx) error {
 	cookie.Name = "eventio_jwt"
 	cookie.Value = signedToken
 	cookie.Expires = time.Now().Add(24 * time.Hour)
-	cookie.HTTPOnly = true // JavaScript cannot read this
+	cookie.HTTPOnly = true     // JavaScript cannot read this
 	cookie.SameSite = "Strict" // Protects against Cross-Site Request Forgery (CSRF)
-	
+
 	c.Cookie(cookie)
 
 	return c.JSON(fiber.Map{
