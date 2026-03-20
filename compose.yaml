@@ -21,6 +21,7 @@ services:
       - "${PORT:-8080}:${PORT:-8080}"
     volumes:
       - ./backend:/app
+      - backend_tmp:/app/tmp
     env_file:
       - .env
     depends_on:
@@ -40,3 +41,4 @@ services:
 
 volumes:
   postgres_data:
+  backend_tmp:

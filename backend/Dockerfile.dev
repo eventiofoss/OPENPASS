@@ -9,6 +9,10 @@ RUN addgroup -S appgroup && adduser -S appuser -G appgroup
 
 WORKDIR /app
 
+# Create tmp directory that will be mounted as named volume
+# Ensure proper permissions for the app user
+RUN mkdir -p /app/tmp && chown appuser:appgroup /app/tmp
+
 # Switch to non-root user
 USER appuser
 
