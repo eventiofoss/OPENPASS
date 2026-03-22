@@ -19,6 +19,8 @@ const (
 	claimsContextKey  = "auth_claims"
 )
 
+var jwtSigningSecret = mustJWTSecret()
+
 // Claims holds the organizer identity stored in the session token.
 type Claims struct {
 	Role models.OrganizerRole `json:"role"`
@@ -120,9 +122,13 @@ func RequireRoles(roles ...models.OrganizerRole) fiber.Handler {
 }
 
 func jwtSecret() string {
+	return jwtSigningSecret
+}
+
+func mustJWTSecret() string {
 	secret := os.Getenv("JWT_SECRET")
 	if secret == "" {
-		return "super-secret-development-key"
+		panic("JWT_SECRET environment variable is required")
 	}
 
 	return secret

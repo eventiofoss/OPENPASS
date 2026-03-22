@@ -90,6 +90,14 @@ func main() {
 	authGroup.Post("/login", authLimiter, h.Login)
 	authGroup.Get("/me", middleware.RequireAuth(), h.Me)
 
+	// Events routes group (protected)
+	eventsGroup := app.Group("/api/events", middleware.RequireAuth())
+	eventsGroup.Post("/", h.CreateEvent)
+	eventsGroup.Get("/", h.ListEvents)
+	eventsGroup.Get("/:id", h.GetEvent)
+	eventsGroup.Patch("/:id", h.UpdateEvent)
+	eventsGroup.Delete("/:id", h.DeleteEvent)
+
 	// Graceful shutdown setup
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
