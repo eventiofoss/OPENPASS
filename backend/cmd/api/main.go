@@ -6,11 +6,14 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/limiter"
 
 	"github.com/eventiofoss/eventio/backend/internal/api"
 	"github.com/eventiofoss/eventio/backend/internal/database"
+	"github.com/eventiofoss/eventio/backend/internal/middleware"
 )
 
 // setupLogger initializes a structured JSON logger
@@ -71,8 +74,21 @@ func main() {
 
 	// Authentication routes group
 	authGroup := app.Group("/api/auth")
-	authGroup.Post("/register", h.Register)
-	authGroup.Post("/login", h.Login)
+	authLimiter := limiter.New(limiter.Config{
+		Max:        5,
+		Expiration: time.Minute,
+		KeyGenerator: func(c *fiber.Ctx) string {
+			return c.IP()
+		},
+		LimitReached: func(c *fiber.Ctx) error {
+			return c.Status(fiber.StatusTooManyRequests).JSON(fiber.Map{
+				"error": "Too many authentication attempts. Please retry in a minute.",
+			})
+		},
+	})
+	authGroup.Post("/register", authLimiter, h.Register)
+	authGroup.Post("/login", authLimiter, h.Login)
+	authGroup.Get("/me", middleware.RequireAuth(), h.Me)
 
 	// Graceful shutdown setup
 	c := make(chan os.Signal, 1)

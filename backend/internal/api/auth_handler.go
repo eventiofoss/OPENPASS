@@ -137,3 +137,25 @@ func (h *Handler) Login(c *fiber.Ctx) error {
 		"message": "Logged in successfully",
 	})
 }
+
+// Me resolves the currently authenticated organizer from the session cookie.
+func (h *Handler) Me(c *fiber.Ctx) error {
+	claims, ok := middleware.ClaimsFromContext(c)
+	if !ok || claims.Subject == "" {
+		return c.Status(fiber.StatusUnauthorized).JSON(
+			fiber.Map{"error": "Authentication required"},
+		)
+	}
+
+	var organizer models.Organizer
+	result := h.DB.Where("id = ?", claims.Subject).First(&organizer)
+	if result.Error != nil {
+		return c.Status(fiber.StatusUnauthorized).JSON(
+			fiber.Map{"error": "Invalid or expired session"},
+		)
+	}
+
+	return c.JSON(fiber.Map{
+		"organizer": organizer,
+	})
+}
