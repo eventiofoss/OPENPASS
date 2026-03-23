@@ -6,17 +6,18 @@
 **Purpose**: Initialize PostgreSQL connection + core table schemas
 **Files**: `internal/database/`
 - GORM connection with connection pooling
-- Auto-migrations for: `users`, `events`, `attendees`, `forms`, `checkins`
-- Seed initial admin user
+- Auto-migrations for: `organizers`, `events`, `form_fields`, `attendees`, `payments`, `checkins`, `exports`
+- Seed initial admin organizer account
 **Endpoints**: Health check `/health`
 **Status**: Foundation - Build FIRST
 
-## 🔐 Module 2: Auth (Organizer-Only)
-**Purpose**: JWT authentication for event organizers only
+## 🔐 Module 2: Auth (Organizer Accounts + Staff Roles)
+**Purpose**: JWT authentication for organizer-side accounts stored in `organizers` only
 **Files**: `internal/middleware/`
-- POST `/api/register` - organizer signup
+- POST `/api/register` - organizer/staff account signup
 - POST `/api/login` - JWT token generation  
 - Middleware: `AuthRequired()` - protect all organizer routes
+- Role storage: `organizers.role` enum = `organizer | admin | volunteer`
 - Rate limiting on auth endpoints
 **Endpoints**: `/api/auth/*`
 **Status**: Security gate - Build SECOND
@@ -29,7 +30,7 @@
 - GET `/api/events/:id` - event details
 - PATCH `/api/events/:id` - update capacity/status
 - DELETE `/api/events/:id`
-**DB Tables**: `events` (id, organizer_id, title, date, capacity, is_public, status)
+**DB Tables**: `events` (id, slug, access_token, organizer_id, title, start_date, capacity, is_public, status, total_registered)
 **Status**: Core business object
 
 ## 📝 Module 4: Custom Forms Builder
@@ -46,9 +47,10 @@
 **Files**: `internal/api/registration.go`
 - POST `/api/events/:id/register` - public endpoint (no auth required)
 - Validate dynamic form fields against event schema
-- Generate attendee record + secure hash
+- Generate attendee record + secure `qr_hash`
 - Capacity check: reject if full
-**DB Tables**: `attendees` (id, event_id, form_data JSONB, hash, status, created_at)
+**DB Tables**: `attendees` (id, event_id, email, name, form_data JSONB, qr_hash, status, checked_in_at, created_at, updated_at)
+**Constraints**: UNIQUE (`event_id`, `email`), attendee pass URL derived at runtime (do not store `public_url`)
 **Status**: Public money-maker
 
 ## 💳 Module 6: Payments (Hyperswitch)
@@ -63,11 +65,11 @@
 ## 🔍 Module 7: QR Check-in Scanner
 **Purpose**: Secure QR validation at venue
 **Files**: `internal/service/qr.go`, `internal/api/checkin.go`
-- POST `/api/checkins/scan` - decode QR → verify hash → mark checked-in
+- POST `/api/checkins/scan` - decode QR → verify `qr_hash` → mark checked-in
 - Atomic DB update (prevent duplicates)
 - Capacity enforcement (stop at 100%)
 **QR Format**: `eventpass://v1/{event_id}/{attendee_hash}`
-**DB Tables**: `checkins` (attendee_id, scanned_at, volunteer_id)
+**DB Tables**: `checkins` (attendee_id, scanned_by, scanned_at)
 **Status**: Venue gatekeeper
 
 ## 📊 Module 8: Real-time Analytics

@@ -14,6 +14,8 @@ import (
 	"github.com/eventiofoss/eventio/backend/internal/api"
 	"github.com/eventiofoss/eventio/backend/internal/database"
 	"github.com/eventiofoss/eventio/backend/internal/middleware"
+	"github.com/eventiofoss/eventio/backend/internal/repository"
+	"github.com/eventiofoss/eventio/backend/internal/service"
 )
 
 // setupLogger initializes a structured JSON logger
@@ -69,8 +71,14 @@ func main() {
 		})
 	})
 
-	// Initialize handlers with database connection
-	h := &api.Handler{DB: db}
+	// Build dependency chain: repository → service → handler
+	orgRepo := repository.NewOrganizerRepository(db)
+	authSvc := service.NewAuthService(orgRepo)
+
+	h := &api.Handler{
+		DB:   db,
+		Auth: authSvc,
+	}
 
 	// Authentication routes group
 	authGroup := app.Group("/api/auth")
@@ -89,6 +97,11 @@ func main() {
 	authGroup.Post("/register", authLimiter, h.Register)
 	authGroup.Post("/login", authLimiter, h.Login)
 	authGroup.Get("/me", middleware.RequireAuth(), h.Me)
+	authGroup.Post(
+		"/logout",
+		middleware.RequireAuth(),
+		h.Logout,
+	)
 
 	// Events routes group (protected)
 	eventsGroup := app.Group("/api/events", middleware.RequireAuth())

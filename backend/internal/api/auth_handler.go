@@ -1,20 +1,13 @@
 package api
 
 import (
-	"strings"
+	"errors"
 	"time"
 
 	"github.com/eventiofoss/eventio/backend/internal/middleware"
-	"github.com/eventiofoss/eventio/backend/internal/models"
+	"github.com/eventiofoss/eventio/backend/internal/service"
 	"github.com/gofiber/fiber/v2"
-	"golang.org/x/crypto/bcrypt"
-	"gorm.io/gorm"
 )
-
-// Handler holds dependencies for request handlers.
-type Handler struct {
-	DB *gorm.DB
-}
 
 // RegisterRequest is the expected organizer signup payload.
 type RegisterRequest struct {
@@ -33,39 +26,20 @@ func (h *Handler) Register(c *fiber.Ctx) error {
 		)
 	}
 
-	if strings.TrimSpace(req.Name) == "" ||
-		strings.TrimSpace(req.Email) == "" ||
-		len(req.Password) < 8 {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Name, email, and a password (min 8 chars) are required",
-		})
-	}
-
-	cleanEmail := strings.ToLower(strings.TrimSpace(req.Email))
-
-	hashedPassword, err := bcrypt.GenerateFromPassword(
-		[]byte(req.Password),
-		12,
+	organizer, err := h.Auth.Register(
+		c.Context(), req.Name, req.Email, req.Password,
 	)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(
-			fiber.Map{"error": "Failed to secure password"},
-		)
-	}
+		if errors.Is(err, service.ErrInvalidInput) {
+			return c.Status(fiber.StatusBadRequest).JSON(
+				fiber.Map{"error": err.Error()},
+			)
+		}
 
-	organizer := models.Organizer{
-		Name:         strings.TrimSpace(req.Name),
-		Email:        cleanEmail,
-		PasswordHash: string(hashedPassword),
-		Role:         models.OrganizerRoleOrganizer,
-	}
-
-	result := h.DB.Create(&organizer)
-	if result.Error != nil {
-		if strings.Contains(result.Error.Error(), "duplicate key value") {
-			return c.Status(fiber.StatusConflict).JSON(fiber.Map{
-				"error": "An account with this email already exists",
-			})
+		if errors.Is(err, service.ErrDuplicateEmail) {
+			return c.Status(fiber.StatusConflict).JSON(
+				fiber.Map{"error": err.Error()},
+			)
 		}
 
 		return c.Status(fiber.StatusInternalServerError).JSON(
@@ -95,31 +69,16 @@ func (h *Handler) Login(c *fiber.Ctx) error {
 		)
 	}
 
-	cleanEmail := strings.ToLower(strings.TrimSpace(req.Email))
-
-	var organizer models.Organizer
-	result := h.DB.Where("email = ?", cleanEmail).First(&organizer)
-	if result.Error != nil {
-		return c.Status(fiber.StatusUnauthorized).JSON(
-			fiber.Map{"error": "Invalid credentials"},
-		)
-	}
-
-	err := bcrypt.CompareHashAndPassword(
-		[]byte(organizer.PasswordHash),
-		[]byte(req.Password),
+	token, err := h.Auth.Login(
+		c.Context(), req.Email, req.Password,
 	)
 	if err != nil {
-		return c.Status(fiber.StatusUnauthorized).JSON(
-			fiber.Map{"error": "Invalid credentials"},
-		)
-	}
+		if errors.Is(err, service.ErrInvalidCredentials) {
+			return c.Status(fiber.StatusUnauthorized).JSON(
+				fiber.Map{"error": "Invalid credentials"},
+			)
+		}
 
-	signedToken, err := middleware.GenerateToken(
-		organizer,
-		middleware.DefaultTokenTTL,
-	)
-	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(
 			fiber.Map{"error": "Could not login"},
 		)
@@ -127,7 +86,7 @@ func (h *Handler) Login(c *fiber.Ctx) error {
 
 	c.Cookie(&fiber.Cookie{
 		Name:     middleware.SessionCookieName,
-		Value:    signedToken,
+		Value:    token,
 		Expires:  time.Now().Add(middleware.DefaultTokenTTL),
 		HTTPOnly: true,
 		SameSite: fiber.CookieSameSiteStrictMode,
@@ -138,7 +97,7 @@ func (h *Handler) Login(c *fiber.Ctx) error {
 	})
 }
 
-// Me resolves the currently authenticated organizer from the session cookie.
+// Me resolves the currently authenticated organizer.
 func (h *Handler) Me(c *fiber.Ctx) error {
 	claims, ok := middleware.ClaimsFromContext(c)
 	if !ok || claims.Subject == "" {
@@ -147,9 +106,10 @@ func (h *Handler) Me(c *fiber.Ctx) error {
 		)
 	}
 
-	var organizer models.Organizer
-	result := h.DB.Where("id = ?", claims.Subject).First(&organizer)
-	if result.Error != nil {
+	organizer, err := h.Auth.GetOrganizer(
+		c.Context(), claims.Subject,
+	)
+	if err != nil {
 		return c.Status(fiber.StatusUnauthorized).JSON(
 			fiber.Map{"error": "Invalid or expired session"},
 		)
@@ -157,5 +117,20 @@ func (h *Handler) Me(c *fiber.Ctx) error {
 
 	return c.JSON(fiber.Map{
 		"organizer": organizer,
+	})
+}
+
+// Logout clears the organizer session cookie.
+func (h *Handler) Logout(c *fiber.Ctx) error {
+	c.Cookie(&fiber.Cookie{
+		Name:     middleware.SessionCookieName,
+		Value:    "",
+		Expires:  time.Now().Add(-time.Hour),
+		HTTPOnly: true,
+		SameSite: fiber.CookieSameSiteStrictMode,
+	})
+
+	return c.JSON(fiber.Map{
+		"message": "Logged out successfully",
 	})
 }
