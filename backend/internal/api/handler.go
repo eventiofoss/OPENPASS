@@ -7,6 +7,7 @@ import (
 
 // Handler holds dependencies for all request handlers.
 type Handler struct {
-	DB   *gorm.DB
-	Auth *service.AuthService
+	DB     *gorm.DB
+	Auth   *service.AuthService
+	Events *service.EventService
 }

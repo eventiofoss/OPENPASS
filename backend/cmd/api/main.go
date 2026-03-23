@@ -75,9 +75,13 @@ func main() {
 	orgRepo := repository.NewOrganizerRepository(db)
 	authSvc := service.NewAuthService(orgRepo)
 
+	eventRepo := repository.NewEventRepository(db)
+	eventSvc := service.NewEventService(eventRepo)
+
 	h := &api.Handler{
-		DB:   db,
-		Auth: authSvc,
+		DB:     db,
+		Auth:   authSvc,
+		Events: eventSvc,
 	}
 
 	// Authentication routes group

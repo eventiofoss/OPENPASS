@@ -1,0 +1,326 @@
+package service
+
+import (
+	"context"
+	"crypto/rand"
+	"errors"
+	"fmt"
+	"strings"
+	"time"
+
+	"github.com/eventiofoss/eventio/backend/internal/models"
+	"github.com/eventiofoss/eventio/backend/internal/repository"
+	"github.com/google/uuid"
+)
+
+const maxSlugRetries = 3
+
+var (
+	// ErrEventNotFound is returned when the event does not exist.
+	ErrEventNotFound = errors.New("event not found")
+	// ErrInvalidEventInput is returned on bad event payloads.
+	ErrInvalidEventInput = errors.New("invalid event input")
+)
+
+// EventRepo defines the database operations used by EventService.
+type EventRepo interface {
+	Create(ctx context.Context, event *models.Event) error
+	FindByIDAndOrganizer(
+		ctx context.Context,
+		eventID uuid.UUID,
+		organizerID uuid.UUID,
+	) (*models.Event, error)
+	FindAllByOrganizer(
+		ctx context.Context,
+		organizerID uuid.UUID,
+	) ([]models.Event, error)
+	Update(
+		ctx context.Context,
+		eventID uuid.UUID,
+		organizerID uuid.UUID,
+		updates map[string]interface{},
+	) (int64, error)
+	Delete(
+		ctx context.Context,
+		eventID uuid.UUID,
+		organizerID uuid.UUID,
+	) (int64, error)
+}
+
+// CreateEventInput carries validated create-event fields.
+type CreateEventInput struct {
+	Title       string
+	Description string
+	StartDate   time.Time
+	Venue       string
+	Capacity    int
+	IsPublic    bool
+}
+
+// UpdateEventInput carries optional update fields.
+type UpdateEventInput struct {
+	Capacity *int
+	Status   *models.EventStatus
+}
+
+// EventService contains event business logic.
+type EventService struct {
+	repo EventRepo
+}
+
+// NewEventService returns a service backed by the concrete repo.
+func NewEventService(
+	repo *repository.EventRepository,
+) *EventService {
+	return &EventService{repo: repo}
+}
+
+// NewEventServiceWithRepo returns a service using any EventRepo.
+func NewEventServiceWithRepo(repo EventRepo) *EventService {
+	return &EventService{repo: repo}
+}
+
+// CreateEvent validates input and persists a new event.
+func (s *EventService) CreateEvent(
+	ctx context.Context,
+	organizerID uuid.UUID,
+	input CreateEventInput,
+) (*models.Event, error) {
+	title := strings.TrimSpace(input.Title)
+	description := strings.TrimSpace(input.Description)
+	venue := strings.TrimSpace(input.Venue)
+	startDate := input.StartDate.UTC()
+
+	if title == "" || venue == "" {
+		return nil, fmt.Errorf(
+			"%w: title and venue are required",
+			ErrInvalidEventInput,
+		)
+	}
+
+	if input.Capacity < 0 {
+		return nil, fmt.Errorf(
+			"%w: capacity cannot be negative",
+			ErrInvalidEventInput,
+		)
+	}
+
+	if startDate.IsZero() || !startDate.After(time.Now().UTC()) {
+		return nil, fmt.Errorf(
+			"%w: start date must be in the future",
+			ErrInvalidEventInput,
+		)
+	}
+
+	var event models.Event
+	var createErr error
+
+	for i := 0; i < maxSlugRetries; i++ {
+		slug, slugErr := generateEventSlug(title)
+		if slugErr != nil {
+			return nil, fmt.Errorf("generating slug: %w", slugErr)
+		}
+
+		event = models.Event{
+			Slug:        slug,
+			OrganizerID: organizerID,
+			Title:       title,
+			Description: description,
+			StartDate:   startDate,
+			Venue:       venue,
+			Capacity:    input.Capacity,
+			IsPublic:    input.IsPublic,
+		}
+
+		createErr = s.repo.Create(ctx, &event)
+		if createErr == nil {
+			return &event, nil
+		}
+
+		if strings.Contains(createErr.Error(), "duplicate key value") &&
+			strings.Contains(createErr.Error(), "slug") {
+			continue
+		}
+
+		return nil, fmt.Errorf("creating event: %w", createErr)
+	}
+
+	return nil, fmt.Errorf("creating event: %w", createErr)
+}
+
+// ListEvents returns all events for the given organizer.
+func (s *EventService) ListEvents(
+	ctx context.Context,
+	organizerID uuid.UUID,
+) ([]models.Event, error) {
+	events, err := s.repo.FindAllByOrganizer(ctx, organizerID)
+	if err != nil {
+		return nil, fmt.Errorf("listing events: %w", err)
+	}
+
+	return events, nil
+}
+
+// GetEvent returns a single event scoped to the organizer.
+func (s *EventService) GetEvent(
+	ctx context.Context,
+	organizerID uuid.UUID,
+	eventID uuid.UUID,
+) (*models.Event, error) {
+	event, err := s.repo.FindByIDAndOrganizer(
+		ctx, eventID, organizerID,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("fetching event: %w", err)
+	}
+
+	if event == nil {
+		return nil, ErrEventNotFound
+	}
+
+	return event, nil
+}
+
+// UpdateEvent applies partial updates to an organizer-owned event.
+func (s *EventService) UpdateEvent(
+	ctx context.Context,
+	organizerID uuid.UUID,
+	eventID uuid.UUID,
+	input UpdateEventInput,
+) (*models.Event, error) {
+	updates := map[string]interface{}{}
+
+	if input.Capacity != nil {
+		if *input.Capacity < 0 {
+			return nil, fmt.Errorf(
+				"%w: capacity cannot be negative",
+				ErrInvalidEventInput,
+			)
+		}
+		updates["capacity"] = *input.Capacity
+	}
+
+	if input.Status != nil {
+		if !isValidEventStatus(*input.Status) {
+			return nil, fmt.Errorf(
+				"%w: invalid event status",
+				ErrInvalidEventInput,
+			)
+		}
+		updates["status"] = *input.Status
+	}
+
+	if len(updates) == 0 {
+		return nil, fmt.Errorf(
+			"%w: no valid fields provided for update",
+			ErrInvalidEventInput,
+		)
+	}
+
+	rows, err := s.repo.Update(
+		ctx, eventID, organizerID, updates,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("updating event: %w", err)
+	}
+
+	if rows == 0 {
+		return nil, ErrEventNotFound
+	}
+
+	event, err := s.repo.FindByIDAndOrganizer(
+		ctx, eventID, organizerID,
+	)
+	if err != nil {
+		return nil, fmt.Errorf(
+			"fetching updated event: %w", err,
+		)
+	}
+
+	return event, nil
+}
+
+// DeleteEvent removes an organizer-owned event.
+func (s *EventService) DeleteEvent(
+	ctx context.Context,
+	organizerID uuid.UUID,
+	eventID uuid.UUID,
+) error {
+	rows, err := s.repo.Delete(ctx, eventID, organizerID)
+	if err != nil {
+		return fmt.Errorf("deleting event: %w", err)
+	}
+
+	if rows == 0 {
+		return ErrEventNotFound
+	}
+
+	return nil
+}
+
+func isValidEventStatus(status models.EventStatus) bool {
+	switch status {
+	case models.EventStatusDraft,
+		models.EventStatusActive,
+		models.EventStatusFull,
+		models.EventStatusCancelled:
+		return true
+	default:
+		return false
+	}
+}
+
+func generateEventSlug(title string) (string, error) {
+	base := slugify(title)
+
+	suffix, err := randomAlphaNumeric(6)
+	if err != nil {
+		return "", err
+	}
+
+	return fmt.Sprintf(
+		"%s-%s", base, strings.ToLower(suffix),
+	), nil
+}
+
+func slugify(input string) string {
+	s := strings.ToLower(strings.TrimSpace(input))
+
+	var b strings.Builder
+	prevHyphen := false
+
+	for _, r := range s {
+		if (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') {
+			b.WriteRune(r)
+			prevHyphen = false
+			continue
+		}
+
+		if !prevHyphen {
+			b.WriteByte('-')
+			prevHyphen = true
+		}
+	}
+
+	out := strings.Trim(b.String(), "-")
+	if out == "" {
+		return "event"
+	}
+
+	return out
+}
+
+func randomAlphaNumeric(n int) (string, error) {
+	const chars = "abcdefghijklmnopqrstuvwxyz0123456789"
+	buf := make([]byte, n)
+
+	if _, err := rand.Read(buf); err != nil {
+		return "", err
+	}
+
+	for i := range buf {
+		buf[i] = chars[int(buf[i])%len(chars)]
+	}
+
+	return string(buf), nil
+}
