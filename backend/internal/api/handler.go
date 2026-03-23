@@ -10,4 +10,5 @@ type Handler struct {
 	DB     *gorm.DB
 	Auth   *service.AuthService
 	Events *service.EventService
+	Forms  *service.FormService
 }
