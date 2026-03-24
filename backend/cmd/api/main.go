@@ -81,11 +81,15 @@ func main() {
 	formRepo := repository.NewFormFieldRepository(db)
 	formSvc := service.NewFormService(formRepo, eventRepo)
 
+	attendeeRepo := repository.NewAttendeeRepository(db)
+	registrationSvc := service.NewRegistrationService(attendeeRepo)
+
 	h := &api.Handler{
-		DB:     db,
-		Auth:   authSvc,
-		Events: eventSvc,
-		Forms:  formSvc,
+		DB:           db,
+		Auth:         authSvc,
+		Events:       eventSvc,
+		Forms:        formSvc,
+		Registration: registrationSvc,
 	}
 
 	// Authentication routes group
@@ -110,6 +114,9 @@ func main() {
 		middleware.RequireAuth(),
 		h.Logout,
 	)
+
+	// Public registration route (no auth middleware)
+	app.Post("/api/events/:id/register", h.RegisterAttendee)
 
 	// Events routes group (protected)
 	eventsGroup := app.Group("/api/events", middleware.RequireAuth())

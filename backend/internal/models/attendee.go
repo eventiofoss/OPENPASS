@@ -11,6 +11,7 @@ import (
 type AttendeeStatus string
 
 const (
+	AttendeeStatusPending    AttendeeStatus = "pending"
 	AttendeeStatusRegistered AttendeeStatus = "registered"
 	AttendeeStatusPaid       AttendeeStatus = "paid"
 	AttendeeStatusCheckedIn  AttendeeStatus = "checked_in"
@@ -25,7 +26,7 @@ type Attendee struct {
 	Name        string          `gorm:"not null" json:"name"`
 	FormData    json.RawMessage `gorm:"type:jsonb;not null;default:'{}'" json:"form_data"`
 	QRHash      string          `gorm:"column:qr_hash;size:64;not null;uniqueIndex" json:"-"`
-	Status      AttendeeStatus  `gorm:"type:varchar(20);not null;default:registered;check:attendees_status,status IN ('registered','paid','checked_in','cancelled')" json:"status"`
+	Status      AttendeeStatus  `gorm:"type:varchar(20);not null;default:pending;check:attendees_status,status IN ('pending','registered','paid','checked_in','cancelled')" json:"status"`
 	CheckedInAt *time.Time      `json:"checked_in_at,omitempty"`
 	CreatedAt   time.Time       `json:"created_at"`
 	UpdatedAt   time.Time       `json:"updated_at"`
