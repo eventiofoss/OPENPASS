@@ -30,6 +30,9 @@ type Event struct {
 	IsPublic        bool        `gorm:"not null;default:false" json:"is_public"`
 	Status          EventStatus `gorm:"type:varchar(20);not null;default:draft;check:events_status,status IN ('draft','active','full','cancelled')" json:"status"`
 	TotalRegistered int         `gorm:"not null;default:0;check:events_total_registered_non_negative,total_registered >= 0" json:"total_registered"`
+	TicketsSold     int         `gorm:"not null;default:0" json:"tickets_sold"`
+	CheckInCount    int         `gorm:"not null;default:0" json:"check_in_count"`
+	TotalRevenue    float64     `gorm:"type:numeric(10,2);not null;default:0" json:"total_revenue"`
 	CreatedAt       time.Time   `json:"created_at"`
 	UpdatedAt       time.Time   `json:"updated_at"`
 

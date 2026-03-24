@@ -84,12 +84,18 @@ func main() {
 	attendeeRepo := repository.NewAttendeeRepository(db)
 	registrationSvc := service.NewRegistrationService(attendeeRepo)
 
+	analyticsRepo := repository.NewAnalyticsRepository(db)
+	analyticsSvc := service.NewAnalyticsService(
+		analyticsRepo, eventRepo,
+	)
+
 	h := &api.Handler{
 		DB:           db,
 		Auth:         authSvc,
 		Events:       eventSvc,
 		Forms:        formSvc,
 		Registration: registrationSvc,
+		Analytics:    analyticsSvc,
 	}
 
 	// Authentication routes group
@@ -127,6 +133,8 @@ func main() {
 	eventsGroup.Delete("/:id", h.DeleteEvent)
 	eventsGroup.Post("/:id/forms", h.SetFormFields)
 	eventsGroup.Get("/:id/forms", h.GetFormFields)
+	eventsGroup.Get("/:id/analytics", h.GetAnalytics)
+	eventsGroup.Get("/:id/export", h.ExportAttendees)
 
 	// Graceful shutdown setup
 	c := make(chan os.Signal, 1)
