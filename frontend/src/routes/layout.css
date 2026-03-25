@@ -1,0 +1,157 @@
+@import 'tailwindcss';
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+	--background: #EDECEA;
+	--foreground: #141414;
+	--card: #FFFFFF;
+	--card-foreground: #141414;
+	--popover: #FFFFFF;
+	--popover-foreground: #141414;
+	--primary: #141414;
+	--primary-foreground: #EDECEA;
+	--secondary: #F5F5F3;
+	--secondary-foreground: #141414;
+	--muted: #F5F5F3;
+	--muted-foreground: #737373;
+	--accent: #4E4EFE;
+	--accent-foreground: #FFFFFF;
+	--destructive: oklch(0.577 0.245 27.325);
+	--border: #D4D4D0;
+	--input: #D4D4D0;
+	--ring: #4E4EFE;
+	--radius: 0.625rem;
+}
+
+.dark {
+	--background: #141414;
+	--foreground: #EDECEA;
+	--card: #1E1E1E;
+	--card-foreground: #EDECEA;
+	--popover: #1E1E1E;
+	--popover-foreground: #EDECEA;
+	--primary: #EDECEA;
+	--primary-foreground: #141414;
+	--secondary: #2A2A2A;
+	--secondary-foreground: #EDECEA;
+	--muted: #2A2A2A;
+	--muted-foreground: #A0A0A0;
+	--accent: #4E4EFE;
+	--accent-foreground: #FFFFFF;
+	--destructive: oklch(0.704 0.191 22.216);
+	--border: #333333;
+	--input: #333333;
+	--ring: #4E4EFE;
+}
+
+@theme inline {
+	--font-sans: 'DM Sans', sans-serif;
+	--font-serif: 'Instrument Serif', serif;
+	--color-ring: var(--ring);
+	--color-input: var(--input);
+	--color-border: var(--border);
+	--color-destructive: var(--destructive);
+	--color-accent-foreground: var(--accent-foreground);
+	--color-accent: var(--accent);
+	--color-muted-foreground: var(--muted-foreground);
+	--color-muted: var(--muted);
+	--color-secondary-foreground: var(--secondary-foreground);
+	--color-secondary: var(--secondary);
+	--color-primary-foreground: var(--primary-foreground);
+	--color-primary: var(--primary);
+	--color-popover-foreground: var(--popover-foreground);
+	--color-popover: var(--popover);
+	--color-card-foreground: var(--card-foreground);
+	--color-card: var(--card);
+	--color-foreground: var(--foreground);
+	--color-background: var(--background);
+	--radius-sm: calc(var(--radius) * 0.6);
+	--radius-md: calc(var(--radius) * 0.8);
+	--radius-lg: var(--radius);
+	--radius-xl: calc(var(--radius) * 1.4);
+	--radius-2xl: calc(var(--radius) * 1.8);
+	--radius-3xl: calc(var(--radius) * 2.2);
+	--radius-4xl: calc(var(--radius) * 2.6);
+}
+
+@layer base {
+	* {
+		@apply border-border outline-ring/50;
+	}
+	body {
+		@apply bg-background text-foreground;
+	}
+	html {
+		@apply font-sans antialiased;
+	}
+}
+
+@custom-variant data-open {
+	&:where([data-state="open"]),
+	&:where([data-open]:not([data-open="false"])) {
+		@slot;
+	}
+}
+
+@custom-variant data-closed {
+	&:where([data-state="closed"]),
+	&:where([data-closed]:not([data-closed="false"])) {
+		@slot;
+	}
+}
+
+@custom-variant data-checked {
+	&:where([data-state="checked"]),
+	&:where([data-checked]:not([data-checked="false"])) {
+		@slot;
+	}
+}
+
+@custom-variant data-unchecked {
+	&:where([data-state="unchecked"]),
+	&:where([data-unchecked]:not([data-unchecked="false"])) {
+		@slot;
+	}
+}
+
+@custom-variant data-selected {
+	&:where([data-selected]) {
+		@slot;
+	}
+}
+
+@custom-variant data-disabled {
+	&:where([data-disabled="true"]),
+	&:where([data-disabled]:not([data-disabled="false"])) {
+		@slot;
+	}
+}
+
+@custom-variant data-active {
+	&:where([data-state="active"]),
+	&:where([data-active]:not([data-active="false"])) {
+		@slot;
+	}
+}
+
+@custom-variant data-horizontal {
+	&:where([data-orientation="horizontal"]) {
+		@slot;
+	}
+}
+
+@custom-variant data-vertical {
+	&:where([data-orientation="vertical"]) {
+		@slot;
+	}
+}
+
+@utility no-scrollbar {
+	-ms-overflow-style: none;
+	scrollbar-width: none;
+	&::-webkit-scrollbar {
+		display: none;
+	}
+}
