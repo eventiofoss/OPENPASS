@@ -3,6 +3,7 @@ package database
 import (
 	"log/slog"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/eventiofoss/eventio/backend/internal/models"
@@ -18,10 +19,15 @@ func Connect(connStr string) *gorm.DB {
 	var db *gorm.DB
 	var err error
 
+	gormLogLevel := logger.Info
+	if strings.EqualFold(os.Getenv("APP_ENV"), "production") {
+		gormLogLevel = logger.Error
+	}
+
 	// Retry up to 10 times with 2-second intervals
 	for i := 0; i < 10; i++ {
 		db, err = gorm.Open(postgres.Open(connStr), &gorm.Config{
-			Logger: logger.Default.LogMode(logger.Info),
+			Logger: logger.Default.LogMode(gormLogLevel),
 		})
 		if err == nil {
 			slog.Info("Successfully connected to the database")

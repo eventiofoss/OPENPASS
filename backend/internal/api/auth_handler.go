@@ -2,6 +2,8 @@ package api
 
 import (
 	"errors"
+	"os"
+	"strings"
 	"time"
 
 	"github.com/eventiofoss/eventio/backend/internal/middleware"
@@ -89,6 +91,7 @@ func (h *Handler) Login(c *fiber.Ctx) error {
 		Value:    token,
 		Expires:  time.Now().Add(middleware.DefaultTokenTTL),
 		HTTPOnly: true,
+		Secure:   isProductionEnv(),
 		SameSite: fiber.CookieSameSiteStrictMode,
 	})
 
@@ -127,10 +130,15 @@ func (h *Handler) Logout(c *fiber.Ctx) error {
 		Value:    "",
 		Expires:  time.Now().Add(-time.Hour),
 		HTTPOnly: true,
+		Secure:   isProductionEnv(),
 		SameSite: fiber.CookieSameSiteStrictMode,
 	})
 
 	return c.JSON(fiber.Map{
 		"message": "Logged out successfully",
 	})
+}
+
+func isProductionEnv() bool {
+	return strings.EqualFold(os.Getenv("APP_ENV"), "production")
 }

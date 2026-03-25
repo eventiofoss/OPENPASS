@@ -5,11 +5,16 @@ import (
 	"log/slog"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/csrf"
+	"github.com/gofiber/fiber/v2/middleware/helmet"
 	"github.com/gofiber/fiber/v2/middleware/limiter"
+	"github.com/gofiber/fiber/v2/middleware/recover"
+	"github.com/gofiber/fiber/v2/middleware/requestid"
 
 	"github.com/eventiofoss/eventio/backend/internal/api"
 	"github.com/eventiofoss/eventio/backend/internal/database"
@@ -35,14 +40,61 @@ func main() {
 		os.Exit(1)
 	}
 
+	if err := middleware.EnsureJWTSecretConfigured(); err != nil {
+		slog.Error(err.Error())
+		os.Exit(1)
+	}
+
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8080"
 	}
 
+	trustedProxies := parseTrustedProxies(os.Getenv("TRUSTED_PROXIES"))
+	isProd := strings.EqualFold(os.Getenv("APP_ENV"), "production")
+	if isProd && len(trustedProxies) == 0 {
+		slog.Error("APP_ENV=production requires TRUSTED_PROXIES to be set for accurate client IP handling behind reverse proxies")
+		os.Exit(1)
+	}
+
+	slog.Info(
+		"Proxy trust configuration",
+		slog.Bool("trusted_proxy_check_enabled", len(trustedProxies) > 0),
+		slog.Int("trusted_proxy_count", len(trustedProxies)),
+		slog.String("app_env", strings.ToLower(strings.TrimSpace(os.Getenv("APP_ENV")))),
+	)
+
 	app := fiber.New(fiber.Config{
-		DisableStartupMessage: true,
+		DisableStartupMessage:  true,
+		ReadTimeout:            15 * time.Second,
+		WriteTimeout:           15 * time.Second,
+		IdleTimeout:            60 * time.Second,
+		BodyLimit:              1 * 1024 * 1024,
+		EnableTrustedProxyCheck: len(trustedProxies) > 0,
+		TrustedProxies:         trustedProxies,
+		ProxyHeader:            fiber.HeaderXForwardedFor,
 	})
+
+	app.Use(recover.New())
+	app.Use(requestid.New())
+	app.Use(helmet.New())
+	app.Use(func(c *fiber.Ctx) error {
+		c.Set("Cross-Origin-Opener-Policy", "same-origin")
+		c.Set("Cross-Origin-Resource-Policy", "same-site")
+		c.Set("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
+		return c.Next()
+	})
+	app.Use(csrf.New(csrf.Config{
+		KeyLookup:      "header:X-CSRF-Token",
+		CookieName:     "eventio_csrf",
+		CookieHTTPOnly: false,
+		CookieSecure:   isProd,
+		CookieSameSite: "Strict",
+		Expiration:     30 * time.Minute,
+		Next: func(c *fiber.Ctx) bool {
+			return strings.HasPrefix(c.Path(), "/api/") && strings.Contains(strings.ToLower(c.Get("Content-Type")), "application/json")
+		},
+	}))
 
 	// Global check on boot to wait for DB and run migrations
 	db := database.Connect(connStr)
@@ -51,23 +103,20 @@ func main() {
 		sqlDB, err := db.DB()
 		if err != nil {
 			slog.Error("Failed to get database instance during healthcheck", slog.String("error", err.Error()))
-			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-				"status":  "error",
-				"message": "Database connection failed",
+			return c.Status(fiber.StatusServiceUnavailable).JSON(fiber.Map{
+				"status": "error",
 			})
 		}
 
 		if err := sqlDB.Ping(); err != nil {
 			slog.Error("Database ping failed during healthcheck", slog.String("error", err.Error()))
-			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-				"status":  "error",
-				"message": "Database ping failed",
+			return c.Status(fiber.StatusServiceUnavailable).JSON(fiber.Map{
+				"status": "error",
 			})
 		}
 
 		return c.JSON(fiber.Map{
-			"status":  "ok",
-			"message": "Database connection successful",
+			"status": "ok",
 		})
 	})
 
@@ -100,18 +149,12 @@ func main() {
 
 	// Authentication routes group
 	authGroup := app.Group("/api/auth")
-	authLimiter := limiter.New(limiter.Config{
-		Max:        5,
-		Expiration: time.Minute,
-		KeyGenerator: func(c *fiber.Ctx) string {
-			return c.IP()
-		},
-		LimitReached: func(c *fiber.Ctx) error {
-			return c.Status(fiber.StatusTooManyRequests).JSON(fiber.Map{
-				"error": "Too many authentication attempts. Please retry in a minute.",
-			})
-		},
-	})
+	if isProd {
+		slog.Info("Auth limiter configured", slog.Int("max_attempts_per_minute", 5), slog.String("mode", "production"))
+	} else {
+		slog.Info("Auth limiter configured", slog.Int("max_attempts_per_minute", 50), slog.String("mode", "development"))
+	}
+	authLimiter := limiter.New(authLimiterConfig(isProd))
 	authGroup.Post("/register", authLimiter, h.Register)
 	authGroup.Post("/login", authLimiter, h.Login)
 	authGroup.Get("/me", middleware.RequireAuth(), h.Me)
@@ -122,7 +165,8 @@ func main() {
 	)
 
 	// Public registration route (no auth middleware)
-	app.Post("/api/events/:id/register", h.RegisterAttendee)
+	registrationLimiter := limiter.New(registrationLimiterConfig())
+	app.Post("/api/events/:id/register", registrationLimiter, h.RegisterAttendee)
 
 	// Events routes group (protected)
 	eventsGroup := app.Group("/api/events", middleware.RequireAuth())
@@ -153,4 +197,58 @@ func main() {
 	}
 
 	slog.Info("Server was successfully shutdown.")
+}
+
+func parseTrustedProxies(raw string) []string {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return nil
+	}
+
+	parts := strings.Split(raw, ",")
+	out := make([]string, 0, len(parts))
+	for _, part := range parts {
+		proxy := strings.TrimSpace(part)
+		if proxy != "" {
+			out = append(out, proxy)
+		}
+	}
+
+	return out
+}
+
+func authLimiterConfig(isProd bool) limiter.Config {
+	maxAttempts := 5
+	if !isProd {
+		maxAttempts = 50
+	}
+
+	return limiter.Config{
+		Max:        maxAttempts,
+		Expiration: time.Minute,
+		KeyGenerator: func(c *fiber.Ctx) string {
+			return c.IP()
+		},
+		SkipSuccessfulRequests: true,
+		LimitReached: func(c *fiber.Ctx) error {
+			return c.Status(fiber.StatusTooManyRequests).JSON(fiber.Map{
+				"error": "Too many authentication attempts. Please retry in a minute.",
+			})
+		},
+	}
+}
+
+func registrationLimiterConfig() limiter.Config {
+	return limiter.Config{
+		Max:        10,
+		Expiration: time.Minute,
+		KeyGenerator: func(c *fiber.Ctx) string {
+			return c.IP()
+		},
+		LimitReached: func(c *fiber.Ctx) error {
+			return c.Status(fiber.StatusTooManyRequests).JSON(fiber.Map{
+				"error": "Too many registration attempts. Please retry in a minute.",
+			})
+		},
+	}
 }
