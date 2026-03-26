@@ -138,6 +138,9 @@ func main() {
 		analyticsRepo, eventRepo,
 	)
 
+	checkinRepo := repository.NewCheckInRepository(db)
+	qrSvc := service.NewQRService(checkinRepo)
+
 	h := &api.Handler{
 		DB:           db,
 		Auth:         authSvc,
@@ -145,6 +148,7 @@ func main() {
 		Forms:        formSvc,
 		Registration: registrationSvc,
 		Analytics:    analyticsSvc,
+		QR:           qrSvc,
 	}
 
 	// Authentication routes group
@@ -179,6 +183,13 @@ func main() {
 	eventsGroup.Get("/:id/forms", h.GetFormFields)
 	eventsGroup.Get("/:id/analytics", h.GetAnalytics)
 	eventsGroup.Get("/:id/export", h.ExportAttendees)
+
+	// Check-in scan route (protected)
+	app.Post(
+		"/api/checkins/scan",
+		middleware.RequireAuth(),
+		h.ScanCheckIn,
+	)
 
 	// Graceful shutdown setup
 	c := make(chan os.Signal, 1)

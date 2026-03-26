@@ -13,4 +13,5 @@ type Handler struct {
 	Forms        *service.FormService
 	Registration *service.RegistrationService
 	Analytics    *service.AnalyticsService
+	QR           *service.QRService
 }
