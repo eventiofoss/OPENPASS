@@ -7,12 +7,17 @@
 	let { title, viewAllHref = "#" }: Props = $props();
 </script>
 
-<div class="flex items-center justify-between">
-	<h2 class="font-serif text-xl sm:text-2xl">{title}</h2>
+<div class="flex items-end justify-between">
+	<h2
+		class="font-serif text-4xl sm:text-5xl"
+	>
+		{title}
+	</h2>
 	<a
 		href={viewAllHref}
-		class="text-xs font-medium text-muted-foreground
-			transition-colors hover:text-foreground"
+		class="text-lg font-medium text-foreground
+			underline underline-offset-4
+			transition-colors hover:text-accent"
 	>
 		View All
 	</a>

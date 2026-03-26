@@ -1,28 +1,25 @@
 <script lang="ts">
 </script>
 
-<section class="px-4 py-8 sm:px-6">
-	<div class="mx-auto max-w-6xl">
-		<h2
-			class="font-serif text-xl italic sm:text-2xl"
-		>
+<section class="px-8 py-14 sm:px-10 lg:px-12">
+	<div class="mx-auto max-w-7xl">
+		<h2 class="font-serif text-3xl italic sm:text-4xl">
 			Explore On The Map
 		</h2>
 		<div
-			class="mt-4 overflow-hidden rounded-xl
-				border border-border bg-card"
+			class="mt-8 overflow-hidden border border-border
+				bg-card"
 		>
 			<!-- Map placeholder -->
 			<div
-				class="relative flex h-[280px] items-center
+				class="relative flex h-[480px] items-center
 					justify-center bg-gradient-to-br
 					from-green-100/60 via-sky-100/40
-					to-emerald-100/50 sm:h-[340px]"
+					to-emerald-100/50 sm:h-[540px]"
 			>
-				<!-- Map-like grid lines -->
+				<!-- Grid lines -->
 				<svg
-					class="absolute inset-0 h-full w-full
-						opacity-20"
+					class="absolute inset-0 h-full w-full opacity-20"
 					xmlns="http://www.w3.org/2000/svg"
 				>
 					<defs>
@@ -40,11 +37,7 @@
 							/>
 						</pattern>
 					</defs>
-					<rect
-						width="100%"
-						height="100%"
-						fill="url(#map-grid)"
-					/>
+					<rect width="100%" height="100%" fill="url(#map-grid)" />
 				</svg>
 
 				<!-- Center marker -->
@@ -52,8 +45,8 @@
 					<div class="flex flex-col items-center">
 						<svg
 							xmlns="http://www.w3.org/2000/svg"
-							width="32"
-							height="32"
+							width="44"
+							height="44"
 							viewBox="0 0 24 24"
 							fill="#4E4EFE"
 							stroke="#4E4EFE"
@@ -64,71 +57,60 @@
 							<path
 								d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"
 							/>
-							<circle
-								cx="12"
-								cy="10"
-								r="3"
-								fill="white"
-							/>
+							<circle cx="12" cy="10" r="3" fill="white" />
 						</svg>
 						<span
-							class="mt-2 rounded-full
-								bg-white/90 px-3 py-1
-								text-xs font-medium
-								text-foreground shadow-sm
-								backdrop-blur-sm"
+							class="mt-3 bg-white/90 px-4 py-2
+								text-sm font-semibold text-foreground
+								shadow-sm backdrop-blur-sm"
 						>
 							Karukutty, IN
 						</span>
 					</div>
 				</div>
 
-				<!-- Floating event dots -->
+				<!-- Floating dots -->
 				<div
 					class="absolute left-[20%] top-[30%]
-						h-3 w-3 animate-pulse
-						rounded-full bg-accent/60"
+						h-4 w-4 animate-pulse bg-accent/60"
 				></div>
 				<div
 					class="absolute right-[25%] top-[25%]
-						h-2 w-2 animate-pulse
-						rounded-full bg-pink-400/60"
+						h-3 w-3 animate-pulse bg-pink-400/60"
 					style="animation-delay: 0.5s;"
 				></div>
 				<div
 					class="absolute bottom-[35%] left-[35%]
-						h-2.5 w-2.5 animate-pulse
-						rounded-full bg-amber-400/60"
+						h-3.5 w-3.5 animate-pulse bg-amber-400/60"
 					style="animation-delay: 1s;"
 				></div>
 				<div
 					class="absolute bottom-[25%] right-[30%]
-						h-2 w-2 animate-pulse
-						rounded-full bg-emerald-400/60"
+						h-3 w-3 animate-pulse bg-emerald-400/60"
 					style="animation-delay: 1.5s;"
 				></div>
 
 				<!-- Zoom controls -->
 				<div
-					class="absolute bottom-3 right-3 z-10
+					class="absolute bottom-4 right-4 z-10
 						flex flex-col gap-1"
 				>
 					<button
-						class="flex h-8 w-8 items-center
-							justify-center rounded bg-white
-							text-foreground shadow-md
-							transition-colors
-							hover:bg-gray-50"
+						class="flex h-10 w-10 items-center
+							justify-center border border-border
+							bg-white text-foreground shadow-md
+							transition-colors hover:bg-gray-50
+							text-lg font-medium"
 						aria-label="Zoom in"
 					>
 						+
 					</button>
 					<button
-						class="flex h-8 w-8 items-center
-							justify-center rounded bg-white
-							text-foreground shadow-md
-							transition-colors
-							hover:bg-gray-50"
+						class="flex h-10 w-10 items-center
+							justify-center border border-border
+							bg-white text-foreground shadow-md
+							transition-colors hover:bg-gray-50
+							text-lg font-medium"
 						aria-label="Zoom out"
 					>
 						−

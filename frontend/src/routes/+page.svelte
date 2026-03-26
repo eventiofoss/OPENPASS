@@ -89,19 +89,16 @@
 		<HeroSection />
 
 		<!-- Happening Now -->
-		<section class="px-4 py-6 sm:px-6">
-			<div class="mx-auto max-w-6xl">
-				<div
-					class="rounded-xl border border-border
-						bg-card p-5"
-				>
+		<section class="px-8 py-8 sm:px-10 lg:px-12">
+			<div class="mx-auto max-w-7xl">
+				<div class="border border-border bg-card p-8 sm:p-12">
 					<SectionHeader
 						title="Happening Now"
 						viewAllHref="/events?filter=happening"
 					/>
 					<div
-						class="no-scrollbar mt-4 flex gap-4
-							overflow-x-auto pb-2"
+						class="mt-10 grid grid-cols-2
+							gap-6 sm:grid-cols-4"
 					>
 						{#each happeningNow as event}
 							<EventCard
@@ -116,19 +113,16 @@
 		</section>
 
 		<!-- Discover Nearby -->
-		<section class="px-4 py-6 sm:px-6">
-			<div class="mx-auto max-w-6xl">
-				<div
-					class="rounded-xl border border-border
-						bg-card p-5"
-				>
+		<section class="px-8 py-14 sm:px-10 lg:px-12">
+			<div class="mx-auto max-w-7xl">
+				<div class="border border-border bg-card p-8 sm:p-12">
 					<SectionHeader
 						title="Discover Nearby"
 						viewAllHref="/events?filter=nearby"
 					/>
 					<div
-						class="no-scrollbar mt-4 flex gap-4
-							overflow-x-auto pb-2"
+						class="mt-10 grid grid-cols-2
+							gap-6 sm:grid-cols-4"
 					>
 						{#each discoverNearby as event}
 							<EventCard
@@ -144,22 +138,13 @@
 		</section>
 
 		<!-- Trending Organizers + Popular Topics -->
-		<section class="px-4 py-6 sm:px-6">
-			<div class="mx-auto max-w-6xl">
-				<div
-					class="grid grid-cols-1 gap-6
-						md:grid-cols-2"
-				>
-					<div
-						class="rounded-xl border border-border
-							bg-card p-5"
-					>
+		<section class="px-8 py-14 sm:px-10 lg:px-12">
+			<div class="mx-auto max-w-7xl">
+				<div class="grid grid-cols-1 gap-6 md:grid-cols-2">
+					<div class="border border-border bg-card p-8 sm:p-12">
 						<TrendingOrganizers />
 					</div>
-					<div
-						class="rounded-xl border border-border
-							bg-card p-5"
-					>
+					<div class="border border-border bg-card p-8 sm:p-12">
 						<PopularTopics />
 					</div>
 				</div>

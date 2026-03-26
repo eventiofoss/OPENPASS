@@ -31,46 +31,38 @@
 	];
 </script>
 
-<div class="flex flex-col gap-4">
+<div class="flex flex-col gap-8">
 	<SectionHeader
 		title="Trending Organizers"
 		viewAllHref="/organizers"
 	/>
-	<div class="flex flex-col gap-3">
+	<div class="flex flex-col gap-6">
 		{#each organizers as org}
-			<div
-				class="flex items-center justify-between"
-			>
-				<div class="flex items-center gap-3">
-					<!-- Avatar placeholder -->
+			<div class="flex items-center justify-between">
+				<div class="flex items-center gap-5">
+					<!-- Square avatar -->
 					<div
-						class="flex h-10 w-10 items-center
-							justify-center rounded-full
-							text-sm font-bold text-white"
+						class="flex h-16 w-16 items-center
+							justify-center text-xl
+							font-bold text-white"
 						style="background-color: {org.color};"
 					>
 						{org.name.charAt(0)}
 					</div>
 					<div>
-						<p
-							class="text-sm font-medium
-								leading-tight"
-						>
+						<p class="text-lg font-semibold leading-tight">
 							{org.name}
 						</p>
-						<p
-							class="text-xs
-								text-muted-foreground"
-						>
-							{org.followers} followers · {org.events}
-							events
+						<p class="mt-1 text-base text-muted-foreground">
+							{org.followers} followers ·
+							{org.events} events
 						</p>
 					</div>
 				</div>
 				<Button
 					variant="outline"
 					size="sm"
-					class="h-7 rounded-full px-4 text-xs"
+					class="h-10 px-6 text-sm !rounded-none"
 				>
 					Follow
 				</Button>

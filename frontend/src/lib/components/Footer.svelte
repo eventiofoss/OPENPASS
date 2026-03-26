@@ -1,18 +1,22 @@
-<footer class="border-t border-border bg-foreground text-primary-foreground">
+<footer
+	class="border-t border-border bg-foreground
+		text-primary-foreground"
+>
 	<div
-		class="mx-auto flex max-w-6xl flex-col items-center
-			gap-8 px-4 py-12 sm:flex-row sm:items-start
-			sm:justify-between sm:px-6"
+		class="mx-auto flex max-w-7xl flex-col
+			items-center gap-12 px-8 py-20
+			sm:flex-row sm:items-start
+			sm:justify-between sm:px-10 lg:px-12"
 	>
 		<!-- Logo -->
 		<div class="flex items-center">
 			<img
 				src="/open_pass_logo.svg"
 				alt="Open Pass"
-				class="h-10 invert"
+				class="h-14 invert"
 			/>
 			<span
-				class="ml-1 mt-auto text-xs
+				class="ml-1 mt-auto text-sm
 					text-primary-foreground/50"
 			>
 				©
@@ -20,27 +24,25 @@
 		</div>
 
 		<!-- Nav Links -->
-		<nav class="flex flex-col items-center gap-2 sm:items-end">
+		<nav class="flex flex-col items-center gap-4 sm:items-end">
 			<a
 				href="/"
-				class="text-sm text-primary-foreground/70
-					transition-colors
-					hover:text-primary-foreground"
+				class="text-base text-primary-foreground/70
+					transition-colors hover:text-primary-foreground"
 			>
 				Home
 			</a>
 			<a
 				href="/events"
-				class="text-sm text-primary-foreground/70
-					transition-colors
-					hover:text-primary-foreground"
+				class="text-base text-primary-foreground/70
+					transition-colors hover:text-primary-foreground"
 			>
 				Events
 			</a>
 			<a
 				href="/organizer/dashboard"
-				class="text-sm text-accent transition-colors
-					hover:text-accent/80"
+				class="text-base text-accent
+					transition-colors hover:text-accent/80"
 			>
 				Organize
 			</a>
@@ -49,10 +51,10 @@
 
 	<!-- License -->
 	<div
-		class="border-t border-primary-foreground/10 px-4
-			py-4 text-center"
+		class="border-t border-primary-foreground/10
+			px-8 py-6 text-center"
 	>
-		<p class="text-xs text-primary-foreground/50">
+		<p class="text-sm text-primary-foreground/50">
 			Content licensed under
 			<a
 				href="https://creativecommons.org/licenses/by-sa/4.0/"

@@ -20,28 +20,27 @@
 
 <a
 	href="/events/{title.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')}"
-	class="group block min-w-[200px] max-w-[220px]
-		shrink-0 sm:min-w-[220px]"
+	class="group block w-full min-w-[240px] flex-1
+		shrink-0"
 >
-	<!-- Image Placeholder -->
+	<!-- Image -->
 	<div
 		class="relative aspect-[4/3] w-full overflow-hidden
-			rounded-lg transition-transform duration-300
-			group-hover:scale-[1.02]"
+			transition-transform duration-300
+			group-hover:scale-[1.01]"
 		style="background-color: {imageColor};"
 	>
-		<!-- Gradient overlay for visual depth -->
 		<div
 			class="absolute inset-0 bg-gradient-to-t
-				from-black/20 to-transparent"
+				from-black/30 to-transparent"
 		></div>
 
-		<!-- Date/time badge -->
 		{#if date}
 			<div
-				class="absolute bottom-2 left-2 rounded
-					bg-white/90 px-1.5 py-0.5 text-[10px]
-					font-medium text-foreground backdrop-blur-sm"
+				class="absolute bottom-4 left-4
+					bg-white/90 px-3 py-1.5 text-sm
+					font-semibold text-foreground
+					backdrop-blur-sm"
 			>
 				{date}{time ? `, ${time}` : ""}
 			</div>
@@ -49,12 +48,12 @@
 	</div>
 
 	<!-- Tags -->
-	<div class="mt-2 flex flex-wrap gap-1">
+	<div class="mt-4 flex flex-wrap gap-2">
 		{#each tags as tag}
 			<Badge
 				variant="secondary"
-				class="rounded-full px-2 py-0 text-[10px]
-					font-medium"
+				class="px-3 py-1 text-sm font-medium
+					!rounded-none"
 			>
 				{tag}
 			</Badge>
@@ -62,23 +61,27 @@
 	</div>
 
 	<!-- Title + Bookmark -->
-	<div class="mt-1.5 flex items-start justify-between gap-2">
+	<div
+		class="mt-3 flex items-start justify-between
+			gap-3"
+	>
 		<h3
-			class="line-clamp-2 text-sm font-medium
-				leading-tight"
+			class="line-clamp-2 text-lg font-semibold
+				leading-snug"
 		>
 			{title}
 		</h3>
 		<button
-			class="shrink-0 pt-0.5 text-muted-foreground
+			class="shrink-0 pt-1
+				text-muted-foreground
 				transition-colors hover:text-foreground"
 			aria-label="Bookmark event"
 			onclick={(e) => e.preventDefault()}
 		>
 			<svg
 				xmlns="http://www.w3.org/2000/svg"
-				width="14"
-				height="14"
+				width="22"
+				height="22"
 				viewBox="0 0 24 24"
 				fill="none"
 				stroke="currentColor"

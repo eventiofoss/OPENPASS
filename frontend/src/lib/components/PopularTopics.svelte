@@ -18,20 +18,21 @@
 	];
 </script>
 
-<div class="flex flex-col gap-4">
+<div class="flex flex-col gap-8">
 	<SectionHeader
 		title="Popular Topics"
 		viewAllHref="/topics"
 	/>
-	<div class="flex flex-wrap gap-2">
+	<div class="flex flex-wrap gap-3">
 		{#each topics as topic}
 			<a href="/topics/{topic.name.slice(1)}">
 				<Badge
 					variant="secondary"
-					class="cursor-pointer rounded-full border
-						border-border px-3 py-1.5 text-xs
-						font-medium transition-colors
-						hover:bg-accent hover:text-accent-foreground"
+					class="cursor-pointer border border-border
+						px-6 py-3 text-lg font-medium
+						transition-colors !rounded-none
+						hover:bg-accent
+						hover:text-accent-foreground"
 				>
 					{topic.name} · {topic.count}
 				</Badge>
