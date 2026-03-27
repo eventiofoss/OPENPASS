@@ -82,8 +82,8 @@
 			<Button
 				variant="outline"
 				size="sm"
-				class="hidden gap-2 whitespace-nowrap
-					!rounded-none text-sm sm:flex"
+				class="hidden !h-12 !w-36 gap-2 whitespace-nowrap
+					!rounded-none px-0 text-sm sm:flex"
 			>
 				<img
 					src="/scan-qr-code.svg"
@@ -95,8 +95,8 @@
 			<!-- Find -->
 			<Button
 				size="sm"
-				class="!rounded-none whitespace-nowrap
-					bg-foreground px-8 py-5 text-sm
+				class="!h-12 !w-36 !rounded-none whitespace-nowrap
+					bg-foreground px-0 text-sm
 					text-background hover:bg-foreground/90"
 			>
 				Find

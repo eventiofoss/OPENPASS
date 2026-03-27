@@ -38,7 +38,7 @@
 		>
 			<div
 				class="flex h-full flex-col border border-[#141414]/14
-					bg-[#EDECEA] p-7 text-[#141414] sm:p-8
+					bg-card p-7 text-[#141414] sm:p-8
 					lg:min-h-[44rem]"
 			>
 				<p
@@ -97,7 +97,7 @@
 						<Button
 							href="/organizer/register"
 							class="h-12 rounded-none border border-[#3D6B8C]
-								bg-[#EDECEA] px-5 font-sans text-lg
+								bg-card px-5 font-sans text-lg
 								text-[#3D6B8C] hover:bg-[#3D6B8C]/6"
 						>
 							Create Organizer Account
@@ -106,7 +106,7 @@
 							href="/"
 							variant="ghost"
 							class="h-12 rounded-none border border-[#141414]/14
-								px-5 font-sans text-lg text-[#141414]
+								bg-card px-5 font-sans text-lg text-[#141414]
 								hover:bg-[#141414]/5 hover:text-[#141414]"
 						>
 							Back to Discover
@@ -117,7 +117,7 @@
 
 			<div
 				class="flex h-full flex-col border border-[#141414]/14
-					bg-[#EDECEA] p-7 text-[#141414] sm:p-8
+					bg-card p-7 text-[#141414] sm:p-8
 					lg:min-h-[44rem]"
 			>
 				<div>
@@ -154,7 +154,7 @@
 							autocomplete="email"
 							placeholder="organizer@studio.com"
 							class="h-14 rounded-none border-[#141414]/14
-								bg-[#EDECEA] px-4 font-sans text-lg
+								bg-card px-4 font-sans text-lg
 								text-[#141414] placeholder:text-[#141414]/45"
 						/>
 						<p class="font-sans text-base text-[#141414]/70">
@@ -187,7 +187,7 @@
 							autocomplete="current-password"
 							placeholder="Enter your password"
 							class="h-14 rounded-none border-[#141414]/14
-								bg-[#EDECEA] px-4 font-sans text-lg
+								bg-card px-4 font-sans text-lg
 								text-[#141414] placeholder:text-[#141414]/45"
 						/>
 					</div>
@@ -205,9 +205,10 @@
 						<Button
 							type="submit"
 							size="lg"
-							class="h-14 w-full rounded-none bg-[#3D6B8C]
-								font-sans text-lg text-[#EDECEA]
-								hover:bg-[#3D6B8C]/90"
+							class="h-14 w-full rounded-none border
+								border-[#3D6B8C] bg-card font-sans
+								text-lg text-[#3D6B8C]
+								hover:bg-[#3D6B8C]/6"
 						>
 							Continue as Organizer
 						</Button>
