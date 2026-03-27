@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"errors"
 	"fmt"
+	"math"
 	"strings"
 	"time"
 
@@ -54,12 +55,14 @@ type CreateEventInput struct {
 	StartDate   time.Time
 	Venue       string
 	Capacity    int
+	Price       float64
 	IsPublic    bool
 }
 
 // UpdateEventInput carries optional update fields.
 type UpdateEventInput struct {
 	Capacity *int
+	Price    *float64
 	Status   *models.EventStatus
 }
 
@@ -104,6 +107,12 @@ func (s *EventService) CreateEvent(
 			ErrInvalidEventInput,
 		)
 	}
+	if input.Price < 0 {
+		return nil, fmt.Errorf(
+			"%w: price cannot be negative",
+			ErrInvalidEventInput,
+		)
+	}
 
 	if startDate.IsZero() || !startDate.After(time.Now().UTC()) {
 		return nil, fmt.Errorf(
@@ -129,6 +138,7 @@ func (s *EventService) CreateEvent(
 			StartDate:   startDate,
 			Venue:       venue,
 			Capacity:    input.Capacity,
+			Price:       normalizeCurrencyAmount(input.Price),
 			IsPublic:    input.IsPublic,
 		}
 
@@ -198,6 +208,15 @@ func (s *EventService) UpdateEvent(
 			)
 		}
 		updates["capacity"] = *input.Capacity
+	}
+	if input.Price != nil {
+		if *input.Price < 0 {
+			return nil, fmt.Errorf(
+				"%w: price cannot be negative",
+				ErrInvalidEventInput,
+			)
+		}
+		updates["price"] = normalizeCurrencyAmount(*input.Price)
 	}
 
 	if input.Status != nil {
@@ -323,4 +342,8 @@ func randomAlphaNumeric(n int) (string, error) {
 	}
 
 	return string(buf), nil
+}
+
+func normalizeCurrencyAmount(value float64) float64 {
+	return math.Round(value*100) / 100
 }

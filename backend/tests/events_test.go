@@ -81,6 +81,9 @@ func (m *mockEventRepo) Update(
 	if cap, ok := updates["capacity"]; ok {
 		ev.Capacity = cap.(int)
 	}
+	if price, ok := updates["price"]; ok {
+		ev.Price = price.(float64)
+	}
 
 	if status, ok := updates["status"]; ok {
 		ev.Status = status.(models.EventStatus)
@@ -113,6 +116,7 @@ func validInput() service.CreateEventInput {
 		Venue:     "Convention Center",
 		StartDate: time.Now().Add(48 * time.Hour),
 		Capacity:  200,
+		Price:     1499.99,
 		IsPublic:  true,
 	}
 }
@@ -138,6 +142,10 @@ func TestEventService_CreateEvent_HappyPath(t *testing.T) {
 
 	if event.OrganizerID != testOrgID {
 		t.Error("organizer ID mismatch")
+	}
+
+	if event.Price != 1499.99 {
+		t.Errorf("expected price to be persisted, got %.2f", event.Price)
 	}
 }
 
@@ -190,6 +198,23 @@ func TestEventService_CreateEvent_NegativeCapacity(
 
 	input := validInput()
 	input.Capacity = -5
+
+	_, err := svc.CreateEvent(
+		context.Background(), testOrgID, input,
+	)
+	if !errors.Is(err, service.ErrInvalidEventInput) {
+		t.Errorf(
+			"expected ErrInvalidEventInput, got: %v", err,
+		)
+	}
+}
+
+func TestEventService_CreateEvent_NegativePrice(t *testing.T) {
+	repo := newMockEventRepo()
+	svc := service.NewEventServiceWithRepo(repo)
+
+	input := validInput()
+	input.Price = -1
 
 	_, err := svc.CreateEvent(
 		context.Background(), testOrgID, input,
@@ -287,6 +312,30 @@ func TestEventService_UpdateEvent_NotFound(t *testing.T) {
 		t.Errorf(
 			"expected ErrEventNotFound, got: %v", err,
 		)
+	}
+}
+
+func TestEventService_UpdateEvent_Price(t *testing.T) {
+	repo := newMockEventRepo()
+	svc := service.NewEventServiceWithRepo(repo)
+
+	event, _ := svc.CreateEvent(
+		context.Background(), testOrgID, validInput(),
+	)
+
+	price := 2499.50
+	updated, err := svc.UpdateEvent(
+		context.Background(),
+		testOrgID,
+		event.ID,
+		service.UpdateEventInput{Price: &price},
+	)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if updated.Price != price {
+		t.Fatalf("expected price %.2f, got %.2f", price, updated.Price)
 	}
 }
 

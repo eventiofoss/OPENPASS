@@ -27,6 +27,7 @@ type Event struct {
 	StartDate       time.Time   `gorm:"not null" json:"start_date"`
 	Venue           string      `gorm:"not null" json:"venue"`
 	Capacity        int         `gorm:"not null;check:events_capacity_non_negative,capacity >= 0" json:"capacity"`
+	Price           float64     `gorm:"type:numeric(10,2);not null;default:0;check:events_price_non_negative,price >= 0" json:"price"`
 	IsPublic        bool        `gorm:"not null;default:false" json:"is_public"`
 	Status          EventStatus `gorm:"type:varchar(20);not null;default:draft;check:events_status,status IN ('draft','active','full','cancelled')" json:"status"`
 	TotalRegistered int         `gorm:"not null;default:0;check:events_total_registered_non_negative,total_registered >= 0" json:"total_registered"`

@@ -13,12 +13,13 @@ import (
 
 // CreateEventRequest is the accepted payload for creating events.
 type CreateEventRequest struct {
-	Title       string `json:"title"`
-	Description string `json:"description"`
-	StartDate   string `json:"start_date"`
-	Venue       string `json:"venue"`
-	Capacity    int    `json:"capacity"`
-	IsPublic    bool   `json:"is_public"`
+	Title       string  `json:"title"`
+	Description string  `json:"description"`
+	StartDate   string  `json:"start_date"`
+	Venue       string  `json:"venue"`
+	Capacity    int     `json:"capacity"`
+	Price       float64 `json:"price"`
+	IsPublic    bool    `json:"is_public"`
 }
 
 // CreateEvent creates a new organizer-owned event.
@@ -53,6 +54,7 @@ func (h *Handler) CreateEvent(c *fiber.Ctx) error {
 			StartDate:   startDate,
 			Venue:       req.Venue,
 			Capacity:    req.Capacity,
+			Price:       req.Price,
 			IsPublic:    req.IsPublic,
 		},
 	)
@@ -134,7 +136,8 @@ func (h *Handler) GetEvent(c *fiber.Ctx) error {
 
 // UpdateEventRequest allows partial updates on mutable fields.
 type UpdateEventRequest struct {
-	Capacity *int               `json:"capacity"`
+	Capacity *int                `json:"capacity"`
+	Price    *float64            `json:"price"`
 	Status   *models.EventStatus `json:"status"`
 }
 
@@ -167,6 +170,7 @@ func (h *Handler) UpdateEvent(c *fiber.Ctx) error {
 		eventID,
 		service.UpdateEventInput{
 			Capacity: req.Capacity,
+			Price:    req.Price,
 			Status:   req.Status,
 		},
 	)
