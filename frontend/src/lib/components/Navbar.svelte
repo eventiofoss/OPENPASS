@@ -3,12 +3,13 @@
 </script>
 
 <nav
-	class="sticky top-0 z-50 border-b border-border
-		bg-background/95 backdrop-blur-sm"
+	class="sticky top-6 z-50 mx-auto w-[95%] max-w-5xl
+		border border-border/50
+		bg-muted/60 backdrop-blur-md shadow-sm"
 >
 	<div
-		class="mx-auto flex h-18 max-w-7xl items-center
-			justify-between px-8 sm:px-10 lg:px-12"
+		class="flex h-16 items-center
+			justify-between px-6 sm:px-8 lg:px-10"
 	>
 		<!-- Logo + Nav Links -->
 		<div class="flex items-center gap-10">
@@ -42,7 +43,7 @@
 					Events
 				</a>
 				<a
-					href="/organizer/dashboard"
+					href="/organizer/login"
 					class="px-4 py-2 text-sm font-semibold
 						uppercase tracking-widest text-accent
 						transition-colors

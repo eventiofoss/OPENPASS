@@ -40,7 +40,7 @@
 				Events
 			</a>
 			<a
-				href="/organizer/dashboard"
+				href="/organizer/login"
 				class="text-base text-accent
 					transition-colors hover:text-accent/80"
 			>
