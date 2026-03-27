@@ -109,7 +109,7 @@
 	<Navbar />
 
 	<main
-		class="flex flex-1 items-center px-8 py-8
+		class="flex flex-1 items-start px-8 py-8
 			sm:px-10 lg:px-12"
 	>
 		<section
@@ -145,7 +145,7 @@
 					approval.
 				</p>
 
-				<div class="mt-8 space-y-3">
+				<div class="mt-6 space-y-3">
 					{#each checklist as item}
 						<div class="border-t border-[#141414]/14 pt-4">
 							<p
@@ -518,7 +518,10 @@
 											px-4 font-sans text-base
 											text-[#141414]"
 									/>
-									<p class="font-sans text-base text-[#141414]/70">
+									<p
+										class="mt-3 font-sans text-base
+											text-[#141414]/70"
+									>
 										{selectedIdLabel()}
 									</p>
 								</div>
