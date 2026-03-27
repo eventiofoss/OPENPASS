@@ -20,6 +20,9 @@ var (
 	ErrRegistrationEventNotFound = errors.New("event not found")
 	// ErrRegistrationEventFull is returned when event capacity is reached.
 	ErrRegistrationEventFull = errors.New("event is full")
+	// ErrRegistrationRequiresCheckout is returned when a paid event is
+	// posted to the free registration flow.
+	ErrRegistrationRequiresCheckout = errors.New("event requires checkout")
 	// ErrAlreadyRegistered is returned for duplicate attendee email per event.
 	ErrAlreadyRegistered = errors.New("attendee already registered for this event")
 )
@@ -100,6 +103,8 @@ func (s *RegistrationService) RegisterAttendee(
 		return nil, ErrRegistrationEventNotFound
 	case repository.RegistrationOutcomeEventFull:
 		return nil, ErrRegistrationEventFull
+	case repository.RegistrationOutcomePaymentRequired:
+		return nil, ErrRegistrationRequiresCheckout
 	case repository.RegistrationOutcomeDuplicateAttendee:
 		return nil, ErrAlreadyRegistered
 	default:

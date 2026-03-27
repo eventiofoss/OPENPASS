@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"strings"
+	"time"
 
 	"github.com/eventiofoss/eventio/backend/internal/models"
 	"github.com/google/uuid"
@@ -19,6 +20,7 @@ const (
 	RegistrationOutcomeCreated
 	RegistrationOutcomeEventNotFound
 	RegistrationOutcomeEventFull
+	RegistrationOutcomePaymentRequired
 	RegistrationOutcomeDuplicateAttendee
 )
 
@@ -44,7 +46,7 @@ func (r *AttendeeRepository) CreateForEvent(
 		var event models.Event
 		if err := tx.
 			Clauses(clause.Locking{Strength: "UPDATE"}).
-			Select("id", "capacity", "total_registered").
+			Select("id", "capacity", "price", "total_registered", "tickets_sold").
 			Where("id = ?", eventID).
 			First(&event).Error; err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -54,7 +56,16 @@ func (r *AttendeeRepository) CreateForEvent(
 			return err
 		}
 
-		if event.TotalRegistered >= event.Capacity {
+		if event.Price > 0 {
+			outcome = RegistrationOutcomePaymentRequired
+			return nil
+		}
+
+		occupied := occupiedInventory(
+			event.TotalRegistered,
+			event.TicketsSold,
+		)
+		if occupied >= event.Capacity {
 			outcome = RegistrationOutcomeEventFull
 			return nil
 		}
@@ -68,10 +79,15 @@ func (r *AttendeeRepository) CreateForEvent(
 			return err
 		}
 
+		nextOccupied := occupied + 1
 		if err := tx.
 			Model(&models.Event{}).
 			Where("id = ?", eventID).
-			UpdateColumn("total_registered", gorm.Expr("total_registered + 1")).
+			Updates(map[string]interface{}{
+				"total_registered": nextOccupied,
+				"tickets_sold":     nextOccupied,
+				"updated_at":       time.Now().UTC(),
+			}).
 			Error; err != nil {
 			return err
 		}
@@ -84,6 +100,14 @@ func (r *AttendeeRepository) CreateForEvent(
 	}
 
 	return outcome, nil
+}
+
+func occupiedInventory(totalRegistered, ticketsSold int) int {
+	if ticketsSold > totalRegistered {
+		return ticketsSold
+	}
+
+	return totalRegistered
 }
 
 func isDuplicateAttendeeErr(err error) bool {

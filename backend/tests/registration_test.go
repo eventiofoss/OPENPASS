@@ -199,6 +199,17 @@ func TestRegistrationService_RegisterAttendee_EventFull(t *testing.T) {
 	}
 }
 
+func TestRegistrationService_RegisterAttendee_PaidEventRequiresCheckout(t *testing.T) {
+	repo := newMockRegistrationRepo()
+	repo.outcome = repository.RegistrationOutcomePaymentRequired
+	svc := service.NewRegistrationServiceWithRepo(repo)
+
+	_, err := svc.RegisterAttendee(context.Background(), validRegistrationInput())
+	if !errors.Is(err, service.ErrRegistrationRequiresCheckout) {
+		t.Errorf("expected ErrRegistrationRequiresCheckout, got: %v", err)
+	}
+}
+
 func TestRegistrationService_RegisterAttendee_DuplicateAttendee(t *testing.T) {
 	repo := newMockRegistrationRepo()
 	repo.outcome = repository.RegistrationOutcomeDuplicateAttendee

@@ -61,6 +61,12 @@ func (h *Handler) RegisterAttendee(c *fiber.Ctx) error {
 			)
 		}
 
+		if errors.Is(err, service.ErrRegistrationRequiresCheckout) {
+			return c.Status(fiber.StatusConflict).JSON(
+				fiber.Map{"error": "This event requires checkout"},
+			)
+		}
+
 		if errors.Is(err, service.ErrAlreadyRegistered) {
 			return c.Status(fiber.StatusConflict).JSON(
 				fiber.Map{"error": "You are already registered for this event"},
