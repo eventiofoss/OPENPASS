@@ -17,10 +17,10 @@ import (
 // --- mock analytics repository ------------------------------------
 
 type mockAnalyticsRepo struct {
-	stats          *repository.EventStats
-	statsErr       error
-	attendeeRows   []repository.AttendeeRow
-	streamErr      error
+	stats        *repository.EventStats
+	statsErr     error
+	attendeeRows []repository.AttendeeRow
+	streamErr    error
 }
 
 func (m *mockAnalyticsRepo) GetEventStats(
@@ -55,8 +55,8 @@ func (m *mockAnalyticsRepo) StreamAttendees(
 // --- mock event repository for analytics tests --------------------
 
 type mockAnalyticsEventRepo struct {
-	event    *models.Event
-	findErr  error
+	event   *models.Event
+	findErr error
 }
 
 func (m *mockAnalyticsEventRepo) Create(

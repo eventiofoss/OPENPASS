@@ -3,8 +3,8 @@ package middleware
 import (
 	"errors"
 	"os"
-	"strings"
 	"slices"
+	"strings"
 	"time"
 
 	"github.com/eventiofoss/eventio/backend/internal/models"

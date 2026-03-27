@@ -26,11 +26,11 @@ type AnalyticsRepo interface {
 
 // DashboardData is the analytics JSON response payload.
 type DashboardData struct {
-	TicketsSold   int     `json:"tickets_sold"`
-	CheckInCount  int     `json:"check_in_count"`
-	TotalRevenue  float64 `json:"total_revenue"`
-	Capacity      int     `json:"capacity"`
-	CapacityPct   float64 `json:"capacity_pct"`
+	TicketsSold  int     `json:"tickets_sold"`
+	CheckInCount int     `json:"check_in_count"`
+	TotalRevenue float64 `json:"total_revenue"`
+	Capacity     int     `json:"capacity"`
+	CapacityPct  float64 `json:"capacity_pct"`
 }
 
 // AnalyticsService contains analytics business logic.

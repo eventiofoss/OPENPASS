@@ -21,8 +21,8 @@ type mockCheckInRepo struct {
 	findErr  error
 
 	// ProcessCheckIn behaviour
-	outcome   repository.CheckInOutcome
-	checkin   *models.CheckIn
+	outcome    repository.CheckInOutcome
+	checkin    *models.CheckIn
 	processErr error
 
 	// Captured args

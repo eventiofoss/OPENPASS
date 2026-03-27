@@ -114,8 +114,8 @@ func TestAuthService_Register_InvalidInput(t *testing.T) {
 	svc := service.NewAuthServiceWithRepo(repo)
 
 	cases := []struct {
-		name     string
-		n, e, p  string
+		name    string
+		n, e, p string
 	}{
 		{"empty name", "", "a@b.com", "password1"},
 		{"empty email", "Ali", "", "password1"},
