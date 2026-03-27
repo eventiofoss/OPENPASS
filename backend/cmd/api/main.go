@@ -1,11 +1,13 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 	"os"
 	"os/signal"
 	"strings"
+	"sync"
 	"syscall"
 	"time"
 
@@ -33,6 +35,13 @@ func setupLogger() {
 
 func main() {
 	setupLogger()
+
+	appCtx, stop := signal.NotifyContext(
+		context.Background(),
+		os.Interrupt,
+		syscall.SIGTERM,
+	)
+	defer stop()
 
 	connStr := os.Getenv("DATABASE_URL")
 	if connStr == "" {
@@ -65,14 +74,14 @@ func main() {
 	)
 
 	app := fiber.New(fiber.Config{
-		DisableStartupMessage:  true,
-		ReadTimeout:            15 * time.Second,
-		WriteTimeout:           15 * time.Second,
-		IdleTimeout:            60 * time.Second,
-		BodyLimit:              1 * 1024 * 1024,
+		DisableStartupMessage:   true,
+		ReadTimeout:             15 * time.Second,
+		WriteTimeout:            15 * time.Second,
+		IdleTimeout:             60 * time.Second,
+		BodyLimit:               1 * 1024 * 1024,
 		EnableTrustedProxyCheck: len(trustedProxies) > 0,
-		TrustedProxies:         trustedProxies,
-		ProxyHeader:            fiber.HeaderXForwardedFor,
+		TrustedProxies:          trustedProxies,
+		ProxyHeader:             fiber.HeaderXForwardedFor,
 	})
 
 	app.Use(recover.New())
@@ -133,6 +142,41 @@ func main() {
 	attendeeRepo := repository.NewAttendeeRepository(db)
 	registrationSvc := service.NewRegistrationService(attendeeRepo)
 
+	paymentGateway, paymentEnabled := configuredPaymentGateway()
+	var paymentSvc *service.PaymentService
+	if paymentEnabled {
+		paymentProvider, err := service.NewPaymentProvider(paymentGateway)
+		if err != nil {
+			slog.Error(
+				"Failed to configure payment provider",
+				slog.String("gateway", paymentGateway),
+				slog.String("error", err.Error()),
+			)
+			os.Exit(1)
+		}
+
+		paymentSvc = service.NewPaymentService(db, paymentProvider)
+		slog.Info(
+			"Payment processing enabled",
+			slog.String("gateway", paymentGateway),
+		)
+	} else {
+		slog.Info(
+			"Payment processing disabled",
+			slog.String(
+				"reason",
+				"ACTIVE_PAYMENT_GATEWAY environment variable is unset",
+			),
+		)
+	}
+	var backgroundWorkers sync.WaitGroup
+	startPaymentSweeper(
+		appCtx,
+		&backgroundWorkers,
+		paymentSvc,
+		paymentSweepInterval,
+	)
+
 	analyticsRepo := repository.NewAnalyticsRepository(db)
 	analyticsSvc := service.NewAnalyticsService(
 		analyticsRepo, eventRepo,
@@ -147,6 +191,7 @@ func main() {
 		Events:       eventSvc,
 		Forms:        formSvc,
 		Registration: registrationSvc,
+		Payment:      paymentSvc,
 		Analytics:    analyticsSvc,
 		QR:           qrSvc,
 	}
@@ -171,6 +216,9 @@ func main() {
 	// Public registration route (no auth middleware)
 	registrationLimiter := limiter.New(registrationLimiterConfig())
 	app.Post("/api/events/:id/register", registrationLimiter, h.RegisterAttendee)
+	paymentLimiter := limiter.New(paymentLimiterConfig())
+	app.Post("/api/events/:id/pay", paymentLimiter, h.CreateCheckout)
+	app.Post("/api/webhooks/:gateway", h.HandleWebhook)
 
 	// Events routes group (protected)
 	eventsGroup := app.Group("/api/events", middleware.RequireAuth())
@@ -191,22 +239,30 @@ func main() {
 		h.ScanCheckIn,
 	)
 
-	// Graceful shutdown setup
-	c := make(chan os.Signal, 1)
-	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
-
 	go func() {
-		<-c
+		<-appCtx.Done()
 		slog.Info("Gracefully shutting down...")
-		_ = app.Shutdown()
+		if err := app.Shutdown(); err != nil {
+			slog.Error(
+				"Fiber shutdown failed",
+				slog.String("error", err.Error()),
+			)
+		}
 	}()
 
 	listenAddr := fmt.Sprintf(":%s", port)
 	slog.Info("Starting Eventio Backend", slog.String("port", port))
 	if err := app.Listen(listenAddr); err != nil {
-		slog.Error("Server encountered an error", slog.String("error", err.Error()))
+		if appCtx.Err() == nil {
+			slog.Error(
+				"Server encountered an error",
+				slog.String("error", err.Error()),
+			)
+		}
 	}
 
+	stop()
+	backgroundWorkers.Wait()
 	slog.Info("Server was successfully shutdown.")
 }
 
@@ -262,4 +318,30 @@ func registrationLimiterConfig() limiter.Config {
 			})
 		},
 	}
+}
+
+func paymentLimiterConfig() limiter.Config {
+	return limiter.Config{
+		Max:        10,
+		Expiration: time.Minute,
+		KeyGenerator: func(c *fiber.Ctx) string {
+			return c.IP()
+		},
+		LimitReached: func(c *fiber.Ctx) error {
+			return c.Status(fiber.StatusTooManyRequests).JSON(fiber.Map{
+				"error": "Too many checkout attempts. Please retry in a minute.",
+			})
+		},
+	}
+}
+
+func configuredPaymentGateway() (string, bool) {
+	gateway := strings.ToLower(
+		strings.TrimSpace(os.Getenv("ACTIVE_PAYMENT_GATEWAY")),
+	)
+	if gateway == "" {
+		return "", false
+	}
+
+	return gateway, true
 }
