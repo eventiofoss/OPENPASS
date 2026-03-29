@@ -101,7 +101,12 @@ func main() {
 		CookieSameSite: "Strict",
 		Expiration:     30 * time.Minute,
 		Next: func(c *fiber.Ctx) bool {
-			return strings.HasPrefix(c.Path(), "/api/") && strings.Contains(strings.ToLower(c.Get("Content-Type")), "application/json")
+			switch c.Method() {
+			case fiber.MethodGet, fiber.MethodHead, fiber.MethodOptions:
+				return true
+			}
+
+			return strings.HasPrefix(c.Path(), "/api/webhooks/")
 		},
 	}))
 
