@@ -727,6 +727,7 @@ func (h *paymentTestHarness) createAuthenticatedOrganizer(
 		name,
 		email,
 		"secureP@ss123",
+		"",
 	)
 	if err != nil {
 		t.Fatalf("register organizer: %v", err)

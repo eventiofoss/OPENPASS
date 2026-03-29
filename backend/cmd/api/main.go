@@ -218,6 +218,9 @@ func main() {
 		h.Logout,
 	)
 
+	// Public event detail route (no auth middleware)
+	app.Get("/api/public/events/:slug", h.GetPublicEvent)
+
 	// Public registration route (no auth middleware)
 	registrationLimiter := limiter.New(registrationLimiterConfig())
 	app.Post("/api/events/:id/register", registrationLimiter, h.RegisterAttendee)

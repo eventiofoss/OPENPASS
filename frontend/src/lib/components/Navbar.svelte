@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { Button } from "$lib/components/ui/button/index.js";
+	import * as DropdownMenu from "$lib/components/ui/dropdown-menu/index.js";
 </script>
 
 <nav
@@ -56,27 +57,52 @@
 
 		<!-- Right Icons -->
 		<div class="flex items-center gap-3">
-			<Button
-				variant="ghost"
-				size="icon"
-				class="h-10 w-10"
-				aria-label="Profile"
-			>
-				<svg
-					xmlns="http://www.w3.org/2000/svg"
-					width="20"
-					height="20"
-					viewBox="0 0 24 24"
-					fill="none"
-					stroke="currentColor"
-					stroke-width="2"
-					stroke-linecap="round"
-					stroke-linejoin="round"
-				>
-					<circle cx="12" cy="8" r="5" />
-					<path d="M20 21a8 8 0 0 0-16 0" />
-				</svg>
-			</Button>
+			<DropdownMenu.Root>
+				<DropdownMenu.Trigger>
+					{#snippet child({ props })}
+						<Button
+							variant="ghost"
+							size="icon"
+							class="h-10 w-10"
+							aria-label="Sign In"
+							{...props}
+						>
+							<svg
+								xmlns="http://www.w3.org/2000/svg"
+								width="20"
+								height="20"
+								viewBox="0 0 24 24"
+								fill="none"
+								stroke="currentColor"
+								stroke-width="2"
+								stroke-linecap="round"
+								stroke-linejoin="round"
+							>
+								<circle cx="12" cy="8" r="5" />
+								<path d="M20 21a8 8 0 0 0-16 0" />
+							</svg>
+						</Button>
+					{/snippet}
+				</DropdownMenu.Trigger>
+				<DropdownMenu.Content align="end" class="w-48 rounded-none border border-[#141414]/14 bg-card font-sans">
+					<DropdownMenu.Item>
+						{#snippet child({ props })}
+							<a href="/login" class="w-full cursor-pointer" {...props}>
+								Sign In
+							</a>
+						{/snippet}
+					</DropdownMenu.Item>
+					<DropdownMenu.Separator class="bg-[#141414]/14" />
+					<DropdownMenu.Item>
+						{#snippet child({ props })}
+							<a href="/register" class="w-full cursor-pointer" {...props}>
+								Create Account
+							</a>
+						{/snippet}
+					</DropdownMenu.Item>
+				</DropdownMenu.Content>
+			</DropdownMenu.Root>
+
 			<Button
 				variant="ghost"
 				size="icon"

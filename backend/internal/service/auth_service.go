@@ -52,7 +52,7 @@ func NewAuthServiceWithRepo(repo OrganizerRepo) *AuthService {
 // Register creates a new organizer account.
 func (s *AuthService) Register(
 	ctx context.Context,
-	name, email, password string,
+	name, email, password, role string,
 ) (*models.Organizer, error) {
 	name = strings.TrimSpace(name)
 	email = strings.ToLower(strings.TrimSpace(email))
@@ -71,11 +71,28 @@ func (s *AuthService) Register(
 		return nil, fmt.Errorf("hashing password: %w", err)
 	}
 
+	// Account role must be organizer, volunteer, or participant.
+	accountRole := models.OrganizerRoleOrganizer
+	role = strings.ToLower(strings.TrimSpace(role))
+	switch role {
+	case "", "organizer":
+		accountRole = models.OrganizerRoleOrganizer
+	case "volunteer":
+		accountRole = models.OrganizerRoleVolunteer
+	case "participant":
+		accountRole = models.OrganizerRoleParticipant
+	default:
+		return nil, fmt.Errorf(
+			"%w: role must be organizer, volunteer, or participant",
+			ErrInvalidInput,
+		)
+	}
+
 	organizer := &models.Organizer{
 		Name:         name,
 		Email:        email,
 		PasswordHash: string(hashed),
-		Role:         models.OrganizerRoleOrganizer,
+		Role:         accountRole,
 	}
 
 	if err := s.repo.Create(ctx, organizer); err != nil {

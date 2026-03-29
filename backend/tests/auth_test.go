@@ -72,6 +72,7 @@ func TestAuthService_Register_HappyPath(t *testing.T) {
 	org, err := svc.Register(
 		context.Background(),
 		"Alice", "Alice@Example.COM", "secureP@ss1",
+		"",
 	)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -93,6 +94,7 @@ func TestAuthService_Register_DuplicateEmail(t *testing.T) {
 	_, err := svc.Register(
 		context.Background(),
 		"Alice", "alice@example.com", "secureP@ss1",
+		"",
 	)
 	if err != nil {
 		t.Fatalf("setup failed: %v", err)
@@ -101,6 +103,7 @@ func TestAuthService_Register_DuplicateEmail(t *testing.T) {
 	_, err = svc.Register(
 		context.Background(),
 		"Alice2", "alice@example.com", "secureP@ss2",
+		"",
 	)
 	if !errors.Is(err, service.ErrDuplicateEmail) {
 		t.Errorf(
@@ -126,6 +129,7 @@ func TestAuthService_Register_InvalidInput(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			_, err := svc.Register(
 				context.Background(), tc.n, tc.e, tc.p,
+				"",
 			)
 			if !errors.Is(err, service.ErrInvalidInput) {
 				t.Errorf(
@@ -144,6 +148,7 @@ func TestAuthService_Login_HappyPath(t *testing.T) {
 	_, err := svc.Register(
 		context.Background(),
 		"Bob", "bob@example.com", "secureP@ss1",
+		"",
 	)
 	if err != nil {
 		t.Fatalf("setup failed: %v", err)
@@ -169,6 +174,7 @@ func TestAuthService_Login_WrongPassword(t *testing.T) {
 	_, err := svc.Register(
 		context.Background(),
 		"Carol", "carol@example.com", "secureP@ss1",
+		"",
 	)
 	if err != nil {
 		t.Fatalf("setup failed: %v", err)

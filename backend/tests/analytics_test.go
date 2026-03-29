@@ -110,6 +110,13 @@ func (m *mockAnalyticsEventRepo) Delete(
 	return 0, nil
 }
 
+func (m *mockAnalyticsEventRepo) FindBySlug(
+	_ context.Context,
+	_ string,
+) (*models.Event, error) {
+	return nil, nil
+}
+
 // --- analytics tests ------------------------------------------
 
 var analyticsOrgID = uuid.New()

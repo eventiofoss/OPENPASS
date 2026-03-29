@@ -106,6 +106,19 @@ func (m *mockEventRepo) Delete(
 	return 1, nil
 }
 
+func (m *mockEventRepo) FindBySlug(
+	_ context.Context,
+	slug string,
+) (*models.Event, error) {
+	for _, ev := range m.events {
+		if ev.Slug == slug {
+			return ev, nil
+		}
+	}
+
+	return nil, nil
+}
+
 // --- tests ------------------------------------------------------------
 
 var testOrgID = uuid.New()

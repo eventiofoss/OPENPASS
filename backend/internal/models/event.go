@@ -24,6 +24,7 @@ type Event struct {
 	OrganizerID     uuid.UUID   `gorm:"type:uuid;not null;index" json:"organizer_id"`
 	Title           string      `gorm:"not null" json:"title"`
 	Description     string      `gorm:"type:text" json:"description"`
+	PosterURL       *string     `gorm:"type:text" json:"poster_url"`
 	StartDate       time.Time   `gorm:"not null" json:"start_date"`
 	Venue           string      `gorm:"not null" json:"venue"`
 	Capacity        int         `gorm:"not null;check:events_capacity_non_negative,capacity >= 0" json:"capacity"`

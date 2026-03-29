@@ -84,6 +84,28 @@ func (r *EventRepository) Update(
 	return result.RowsAffected, result.Error
 }
 
+// FindBySlug returns one event by its public slug.
+func (r *EventRepository) FindBySlug(
+	ctx context.Context,
+	slug string,
+) (*models.Event, error) {
+	var event models.Event
+
+	err := r.db.WithContext(ctx).
+		Preload("Organizer").
+		Where("slug = ?", slug).
+		First(&event).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+
+		return nil, err
+	}
+
+	return &event, nil
+}
+
 // Delete removes an event scoped to the owner.
 func (r *EventRepository) Delete(
 	ctx context.Context,

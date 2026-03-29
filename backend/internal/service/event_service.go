@@ -31,6 +31,10 @@ type EventRepo interface {
 		eventID uuid.UUID,
 		organizerID uuid.UUID,
 	) (*models.Event, error)
+	FindBySlug(
+		ctx context.Context,
+		slug string,
+	) (*models.Event, error)
 	FindAllByOrganizer(
 		ctx context.Context,
 		organizerID uuid.UUID,
@@ -275,6 +279,40 @@ func (s *EventService) DeleteEvent(
 	}
 
 	return nil
+}
+
+// GetPublicEvent returns a single event by slug for public display.
+// Only active or full public events are returned.
+func (s *EventService) GetPublicEvent(
+	ctx context.Context,
+	slug string,
+) (*models.Event, error) {
+	slug = strings.TrimSpace(slug)
+	if slug == "" {
+		return nil, fmt.Errorf(
+			"%w: slug is required", ErrInvalidEventInput,
+		)
+	}
+
+	event, err := s.repo.FindBySlug(ctx, slug)
+	if err != nil {
+		return nil, fmt.Errorf("fetching public event: %w", err)
+	}
+
+	if event == nil {
+		return nil, ErrEventNotFound
+	}
+
+	if !event.IsPublic {
+		return nil, ErrEventNotFound
+	}
+
+	if event.Status != models.EventStatusActive &&
+		event.Status != models.EventStatusFull {
+		return nil, ErrEventNotFound
+	}
+
+	return event, nil
 }
 
 func isValidEventStatus(status models.EventStatus) bool {

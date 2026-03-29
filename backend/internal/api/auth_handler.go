@@ -16,6 +16,7 @@ type RegisterRequest struct {
 	Name     string `json:"name"`
 	Email    string `json:"email"`
 	Password string `json:"password"`
+	Role     string `json:"role"`
 }
 
 // Register creates an organizer account.
@@ -30,6 +31,7 @@ func (h *Handler) Register(c *fiber.Ctx) error {
 
 	organizer, err := h.Auth.Register(
 		c.Context(), req.Name, req.Email, req.Password,
+		req.Role,
 	)
 	if err != nil {
 		if errors.Is(err, service.ErrInvalidInput) {

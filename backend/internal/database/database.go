@@ -51,6 +51,11 @@ func Connect(connStr string) *gorm.DB {
 
 // autoMigrate runs all database migrations for registered models.
 func autoMigrate(db *gorm.DB) error {
+	// Drop the old constraint to allow GORM to redefine it with the 'participant' role
+	if err := db.Exec("ALTER TABLE organizers DROP CONSTRAINT IF EXISTS chk_organizers_role").Error; err != nil {
+		return err
+	}
+
 	return db.AutoMigrate(
 		&models.Organizer{},
 		&models.Event{},
