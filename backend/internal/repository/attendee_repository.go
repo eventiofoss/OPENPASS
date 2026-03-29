@@ -47,7 +47,7 @@ func (r *AttendeeRepository) CreateForEvent(
 		if err := tx.
 			Clauses(clause.Locking{Strength: "UPDATE"}).
 			Select("id", "capacity", "price", "total_registered", "tickets_sold").
-			Where("id = ?", eventID).
+			Where("id = ? AND status = ?", eventID, models.EventStatusActive).
 			First(&event).Error; err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
 				outcome = RegistrationOutcomeEventNotFound

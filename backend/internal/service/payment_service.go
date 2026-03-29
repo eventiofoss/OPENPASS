@@ -180,10 +180,11 @@ func (s *PaymentService) ReserveTicket(
 			SET tickets_sold = GREATEST(tickets_sold, total_registered) + 1,
 			    updated_at = NOW()
 			WHERE id = ?
+			  AND status = ?
 			  AND price > 0
 			  AND GREATEST(tickets_sold, total_registered) < capacity
 			RETURNING id, tickets_sold, capacity, price
-		`, eventID).Scan(&inventory)
+		`, eventID, models.EventStatusActive).Scan(&inventory)
 		if result.Error != nil {
 			return fmt.Errorf("reserve inventory: %w", result.Error)
 		}
@@ -659,7 +660,7 @@ func (s *PaymentService) loadCheckoutEventState(
 			"tickets_sold",
 			"total_registered",
 		).
-		Where("id = ?", eventID).
+		Where("id = ? AND status = ?", eventID, models.EventStatusActive).
 		Limit(1).
 		Take(&state).Error
 	if err != nil {
