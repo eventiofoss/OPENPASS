@@ -2,13 +2,17 @@ package api
 
 import (
 	"bufio"
+	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/eventiofoss/eventio/backend/internal/service"
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
 )
+
+const attendeeExportTimeout = 5 * time.Minute
 
 // GetAnalytics returns the dashboard JSON for an event.
 func (h *Handler) GetAnalytics(c *fiber.Ctx) error {
@@ -90,6 +94,9 @@ func (h *Handler) ExportAttendees(c *fiber.Ctx) error {
 	filename := fmt.Sprintf(
 		"attendees-%s.csv", eventID.String()[:8],
 	)
+	exportOrganizerID := organizerID
+	exportEventID := eventID
+	analyticsSvc := h.Analytics
 
 	c.Set("Content-Type", "text/csv")
 	c.Set(
@@ -101,10 +108,18 @@ func (h *Handler) ExportAttendees(c *fiber.Ctx) error {
 
 	c.Context().SetBodyStreamWriter(
 		func(w *bufio.Writer) {
-			_ = h.Analytics.ExportAttendeesCSV(
-				c.Context(),
-				organizerID,
-				eventID,
+			// Never pass Fiber's RequestCtx into asynchronous stream work.
+			// RequestCtx is pooled and may be recycled before DB rows finish.
+			streamCtx, cancel := context.WithTimeout(
+				context.Background(),
+				attendeeExportTimeout,
+			)
+			defer cancel()
+
+			_ = analyticsSvc.ExportAttendeesCSV(
+				streamCtx,
+				exportOrganizerID,
+				exportEventID,
 				w,
 			)
 			_ = w.Flush()

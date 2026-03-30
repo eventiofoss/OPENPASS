@@ -115,6 +115,10 @@ func (s *AnalyticsService) ExportAttendeesCSV(
 	eventID uuid.UUID,
 	w io.Writer,
 ) error {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
 	event, err := s.events.FindByIDAndOrganizer(
 		ctx, eventID, organizerID,
 	)
@@ -129,7 +133,6 @@ func (s *AnalyticsService) ExportAttendeesCSV(
 	}
 
 	csvW := csv.NewWriter(w)
-	defer csvW.Flush()
 
 	header := []string{
 		"Name", "Email", "Status",
@@ -166,6 +169,13 @@ func (s *AnalyticsService) ExportAttendeesCSV(
 
 		return fmt.Errorf(
 			"analytics: streaming csv: %w", streamErr,
+		)
+	}
+
+	csvW.Flush()
+	if err := csvW.Error(); err != nil {
+		return fmt.Errorf(
+			"analytics: flushing csv: %w", err,
 		)
 	}
 
