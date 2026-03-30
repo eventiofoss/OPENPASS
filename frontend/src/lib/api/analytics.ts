@@ -1,4 +1,4 @@
-import { getApiBaseUrl } from './events';
+import { apiFetch, getApiBaseUrl } from './http';
 
 /** Analytics counters returned by the backend. */
 export interface AnalyticsData {
@@ -68,7 +68,7 @@ export async function getEventAnalytics(
 	fetchFn: typeof fetch,
 	eventId: string
 ): Promise<AnalyticsData> {
-	const res = await fetchFn(buildUrl(`/${eventId}/analytics`));
+	const res = await apiFetch(fetchFn, buildUrl(`/${eventId}/analytics`));
 
 	if (!res.ok) {
 		throw new Error(
@@ -87,7 +87,7 @@ export async function getEventAnalytics(
 export async function getOrganizerEvents(
 	fetchFn: typeof fetch
 ): Promise<OrganizerEvent[]> {
-	const res = await fetchFn(buildUrl('/'));
+	const res = await apiFetch(fetchFn, buildUrl('/'));
 
 	if (!res.ok) {
 		throw new Error(
@@ -107,7 +107,7 @@ export async function getEventDetail(
 	fetchFn: typeof fetch,
 	eventId: string
 ): Promise<OrganizerEventDetail> {
-	const res = await fetchFn(buildUrl(`/${eventId}`));
+	const res = await apiFetch(fetchFn, buildUrl(`/${eventId}`));
 
 	if (!res.ok) {
 		throw new Error(

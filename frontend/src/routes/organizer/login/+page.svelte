@@ -2,17 +2,37 @@
 	import Navbar from "$lib/components/Navbar.svelte";
 	import { Button } from "$lib/components/ui/button/index.js";
 	import { Input } from "$lib/components/ui/input/index.js";
+	import { loginUser } from "$lib/api/auth";
 
+	let email = $state("");
+	let password = $state("");
 	let submitted = $state(false);
+	let errorMsg = $state("");
 
 	const organizerGuidelines = [
 		"Only organizers can sign in here.",
 		"New accounts need approval first.",
 	];
 
-	function handleSubmit(event: SubmitEvent) {
+	async function handleSubmit(event: SubmitEvent) {
 		event.preventDefault();
-		submitted = true;
+		errorMsg = "";
+		if (!email || !password) {
+			errorMsg = "Email and password are required.";
+			submitted = true;
+			return;
+		}
+
+		try {
+			await loginUser(fetch, { email, password });
+			submitted = true;
+			window.location.href = "/organizer/dashboard";
+		} catch (err: unknown) {
+			errorMsg = err instanceof Error
+				? err.message
+				: "Invalid credentials";
+			submitted = true;
+		}
 	}
 </script>
 
@@ -152,6 +172,7 @@
 							name="email"
 							type="email"
 							autocomplete="email"
+							bind:value={email}
 							placeholder="organizer@studio.com"
 							class="h-14 rounded-none border-[#141414]/14
 								bg-card px-4 font-sans text-lg
@@ -185,6 +206,7 @@
 							name="password"
 							type="password"
 							autocomplete="current-password"
+							bind:value={password}
 							placeholder="Enter your password"
 							class="h-14 rounded-none border-[#141414]/14
 								bg-card px-4 font-sans text-lg
@@ -215,8 +237,7 @@
 
 						{#if submitted}
 							<p class="font-sans text-base text-[#141414]/70">
-								This page is ready for the real login flow to be
-								connected.
+								{errorMsg || "Signed in successfully. Redirecting..."}
 							</p>
 						{/if}
 					</div>

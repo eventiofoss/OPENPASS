@@ -1,3 +1,5 @@
+import { apiFetch } from './http';
+
 export interface RegisterParams {
 	name: string;
 	email: string;
@@ -6,7 +8,7 @@ export interface RegisterParams {
 }
 
 export async function registerUser(fetchFn: typeof fetch, params: RegisterParams): Promise<void> {
-	const res = await fetchFn('/api/auth/register', {
+	const res = await apiFetch(fetchFn, '/api/auth/register', {
 		method: 'POST',
 		headers: {
 			'Content-Type': 'application/json'
@@ -21,7 +23,7 @@ export async function registerUser(fetchFn: typeof fetch, params: RegisterParams
 }
 
 export async function loginUser(fetchFn: typeof fetch, params: Partial<RegisterParams>): Promise<void> {
-	const res = await fetchFn('/api/auth/login', {
+	const res = await apiFetch(fetchFn, '/api/auth/login', {
 		method: 'POST',
 		headers: {
 			'Content-Type': 'application/json'

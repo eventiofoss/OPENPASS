@@ -1,19 +1,4 @@
-import { env } from '$env/dynamic/private';
-import { env as publicEnv } from '$env/dynamic/public';
-
-/**
- * Helper to determine the correct API base URL.
- * During SSR (server-side), it prefers INTERNAL_API_BASE_URL (for Docker networking).
- * On the client, it uses PUBLIC_API_URL or a local relative path.
- */
-export function getApiBaseUrl(): string {
-	if (typeof window === 'undefined') {
-		// Server-side
-		return env.INTERNAL_API_BASE_URL || 'http://localhost:8080';
-	}
-	// Client-side
-	return publicEnv.PUBLIC_API_URL || ''; // Empty string means it will be relative to current origin, handled by a reverse proxy
-}
+import { apiFetch, getApiBaseUrl } from './http';
 
 export interface PublicEvent {
 	slug: string;
@@ -101,7 +86,7 @@ export async function getPublicEvent(
 	// For client-side requests, assuming Vite's proxy or Caddy forwards `/api` directly to backend
 	const url = typeof window === 'undefined' ? `${baseUrl}/api/public/events/${slug}` : `/api/public/events/${slug}`;
 
-	const res = await fetchFn(url);
+	const res = await apiFetch(fetchFn, url);
 
 	if (!res.ok) {
 		if (res.status === 404) {
@@ -119,7 +104,7 @@ export async function createOrganizerEvent(
 	fetchFn: typeof fetch,
 	input: CreateOrganizerEventInput
 ): Promise<OrganizerEventRecord> {
-	const res = await fetchFn(getOrganizerEventsUrl(), {
+	const res = await apiFetch(fetchFn, getOrganizerEventsUrl(), {
 		method: 'POST',
 		headers: {
 			'Content-Type': 'application/json'
@@ -146,7 +131,8 @@ export async function setOrganizerEventFormFields(
 	eventId: string,
 	fields: OrganizerFormFieldInput[]
 ): Promise<OrganizerFormFieldInput[]> {
-	const res = await fetchFn(
+	const res = await apiFetch(
+		fetchFn,
 		getOrganizerEventsUrl(`/${eventId}/forms`),
 		{
 			method: 'POST',
