@@ -11,7 +11,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-// RegisterRequest is the expected organizer signup payload.
+// RegisterRequest is the expected signup payload.
 type RegisterRequest struct {
 	Name     string `json:"name"`
 	Email    string `json:"email"`
@@ -19,7 +19,7 @@ type RegisterRequest struct {
 	Role     string `json:"role"`
 }
 
-// Register creates an organizer account.
+// Register creates a user account.
 func (h *Handler) Register(c *fiber.Ctx) error {
 	req := new(RegisterRequest)
 
@@ -29,7 +29,7 @@ func (h *Handler) Register(c *fiber.Ctx) error {
 		)
 	}
 
-	organizer, err := h.Auth.Register(
+	user, err := h.Auth.Register(
 		c.Context(), req.Name, req.Email, req.Password,
 		req.Role,
 	)
@@ -53,17 +53,18 @@ func (h *Handler) Register(c *fiber.Ctx) error {
 
 	return c.Status(fiber.StatusCreated).JSON(fiber.Map{
 		"message":   "Account created successfully",
-		"organizer": organizer,
+		"user":      user,
+		"organizer": user,
 	})
 }
 
-// LoginRequest is the expected organizer login payload.
+// LoginRequest is the expected login payload.
 type LoginRequest struct {
 	Email    string `json:"email"`
 	Password string `json:"password"`
 }
 
-// Login authenticates an organizer and issues a session cookie.
+// Login authenticates a user and issues a session cookie.
 func (h *Handler) Login(c *fiber.Ctx) error {
 	req := new(LoginRequest)
 
@@ -102,7 +103,7 @@ func (h *Handler) Login(c *fiber.Ctx) error {
 	})
 }
 
-// Me resolves the currently authenticated organizer.
+// Me resolves the currently authenticated user.
 func (h *Handler) Me(c *fiber.Ctx) error {
 	claims, ok := middleware.ClaimsFromContext(c)
 	if !ok || claims.Subject == "" {
@@ -111,7 +112,7 @@ func (h *Handler) Me(c *fiber.Ctx) error {
 		)
 	}
 
-	organizer, err := h.Auth.GetOrganizer(
+	user, err := h.Auth.GetUser(
 		c.Context(), claims.Subject,
 	)
 	if err != nil {
@@ -121,11 +122,12 @@ func (h *Handler) Me(c *fiber.Ctx) error {
 	}
 
 	return c.JSON(fiber.Map{
-		"organizer": organizer,
+		"user":      user,
+		"organizer": user,
 	})
 }
 
-// Logout clears the organizer session cookie.
+// Logout clears the user session cookie.
 func (h *Handler) Logout(c *fiber.Ctx) error {
 	c.Cookie(&fiber.Cookie{
 		Name:     middleware.SessionCookieName,

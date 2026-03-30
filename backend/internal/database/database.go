@@ -51,13 +51,37 @@ func Connect(connStr string) *gorm.DB {
 
 // autoMigrate runs all database migrations for registered models.
 func autoMigrate(db *gorm.DB) error {
-	// Drop the old constraint to allow GORM to redefine it with the 'participant' role
-	if err := db.Exec("ALTER TABLE organizers DROP CONSTRAINT IF EXISTS chk_organizers_role").Error; err != nil {
+	// Rename legacy organizers table to users if this is an upgraded deployment.
+	if err := db.Exec(`
+		DO $$
+		BEGIN
+			IF EXISTS (
+				SELECT 1 FROM information_schema.tables
+				WHERE table_schema = 'public' AND table_name = 'organizers'
+			) AND NOT EXISTS (
+				SELECT 1 FROM information_schema.tables
+				WHERE table_schema = 'public' AND table_name = 'users'
+			) THEN
+				ALTER TABLE organizers RENAME TO users;
+			END IF;
+		END $$;
+	`).Error; err != nil {
+		return err
+	}
+
+	// Drop old role constraints so GORM can apply the users role check.
+	if err := db.Exec("ALTER TABLE IF EXISTS users DROP CONSTRAINT IF EXISTS chk_organizers_role").Error; err != nil {
+		return err
+	}
+	if err := db.Exec("ALTER TABLE IF EXISTS users DROP CONSTRAINT IF EXISTS organizers_role").Error; err != nil {
+		return err
+	}
+	if err := db.Exec("ALTER TABLE IF EXISTS users DROP CONSTRAINT IF EXISTS users_role").Error; err != nil {
 		return err
 	}
 
 	return db.AutoMigrate(
-		&models.Organizer{},
+		&models.User{},
 		&models.Event{},
 		&models.FormField{},
 		&models.Attendee{},

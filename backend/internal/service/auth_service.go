@@ -9,6 +9,7 @@ import (
 	"github.com/eventiofoss/eventio/backend/internal/middleware"
 	"github.com/eventiofoss/eventio/backend/internal/models"
 	"github.com/eventiofoss/eventio/backend/internal/repository"
+	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -25,35 +26,39 @@ var (
 	ErrInvalidCredentials = errors.New("invalid credentials")
 )
 
-// OrganizerRepo defines the database operations used by AuthService.
-type OrganizerRepo interface {
-	Create(ctx context.Context, org *models.Organizer) error
-	FindByEmail(ctx context.Context, email string) (*models.Organizer, error)
-	FindByID(ctx context.Context, id string) (*models.Organizer, error)
+// UserRepo defines the database operations used by AuthService.
+type UserRepo interface {
+	Create(ctx context.Context, user *models.User) error
+	FindByEmail(ctx context.Context, email string) (*models.User, error)
+	FindByID(ctx context.Context, id string) (*models.User, error)
+}
+
+type userCreateAndClaimRepo interface {
+	CreateAndClaim(ctx context.Context, user *models.User) error
 }
 
 // AuthService contains authentication business logic.
 type AuthService struct {
-	repo OrganizerRepo
+	repo UserRepo
 }
 
 // NewAuthService returns a service backed by the concrete repository.
 func NewAuthService(
-	repo *repository.OrganizerRepository,
+	repo *repository.UserRepository,
 ) *AuthService {
 	return &AuthService{repo: repo}
 }
 
-// NewAuthServiceWithRepo returns a service using any OrganizerRepo.
-func NewAuthServiceWithRepo(repo OrganizerRepo) *AuthService {
+// NewAuthServiceWithRepo returns a service using any UserRepo.
+func NewAuthServiceWithRepo(repo UserRepo) *AuthService {
 	return &AuthService{repo: repo}
 }
 
-// Register creates a new organizer account.
+// Register creates a new user account.
 func (s *AuthService) Register(
 	ctx context.Context,
 	name, email, password, role string,
-) (*models.Organizer, error) {
+) (*models.User, error) {
 	name = strings.TrimSpace(name)
 	email = strings.ToLower(strings.TrimSpace(email))
 
@@ -72,15 +77,15 @@ func (s *AuthService) Register(
 	}
 
 	// Account role must be organizer, volunteer, or participant.
-	accountRole := models.OrganizerRoleOrganizer
+	accountRole := models.UserRoleOrganizer
 	role = strings.ToLower(strings.TrimSpace(role))
 	switch role {
 	case "", "organizer":
-		accountRole = models.OrganizerRoleOrganizer
+		accountRole = models.UserRoleOrganizer
 	case "volunteer":
-		accountRole = models.OrganizerRoleVolunteer
+		accountRole = models.UserRoleVolunteer
 	case "participant":
-		accountRole = models.OrganizerRoleParticipant
+		accountRole = models.UserRoleParticipant
 	default:
 		return nil, fmt.Errorf(
 			"%w: role must be organizer, volunteer, or participant",
@@ -88,42 +93,66 @@ func (s *AuthService) Register(
 		)
 	}
 
-	organizer := &models.Organizer{
+	user := &models.User{
 		Name:         name,
 		Email:        email,
 		PasswordHash: string(hashed),
 		Role:         accountRole,
 	}
 
-	if err := s.repo.Create(ctx, organizer); err != nil {
+	if createAndClaimRepo, ok := s.repo.(userCreateAndClaimRepo); ok {
+		if err := createAndClaimRepo.CreateAndClaim(ctx, user); err != nil {
+			if strings.Contains(err.Error(), "duplicate key value") {
+				return nil, ErrDuplicateEmail
+			}
+
+			return nil, fmt.Errorf("creating user: %w", err)
+		}
+
+		return user, nil
+	}
+
+	if err := s.repo.Create(ctx, user); err != nil {
 		if strings.Contains(err.Error(), "duplicate key value") {
 			return nil, ErrDuplicateEmail
 		}
 
-		return nil, fmt.Errorf("creating organizer: %w", err)
+		return nil, fmt.Errorf("creating user: %w", err)
 	}
 
-	return organizer, nil
+	if claimRepo, ok := s.repo.(interface {
+		ClaimUnlinkedAttendeesByEmail(
+			ctx context.Context,
+			userID uuid.UUID,
+			email string,
+		) (int64, error)
+	}); ok {
+		if _, err := claimRepo.ClaimUnlinkedAttendeesByEmail(ctx, user.ID, user.Email); err != nil {
+			return nil, fmt.Errorf("claiming attendees by email: %w", err)
+		}
+	}
+
+	return user, nil
 }
 
-// Login authenticates an organizer and returns a signed JWT.
+// Login authenticates a user and returns a signed JWT.
 func (s *AuthService) Login(
 	ctx context.Context,
 	email, password string,
 ) (string, error) {
 	email = strings.ToLower(strings.TrimSpace(email))
 
-	organizer, err := s.repo.FindByEmail(ctx, email)
+	user, err := s.repo.FindByEmail(ctx, email)
 	if err != nil {
-		return "", fmt.Errorf("finding organizer: %w", err)
+		return "", fmt.Errorf("finding user: %w", err)
 	}
 
-	if organizer == nil {
+	if user == nil {
 		return "", ErrInvalidCredentials
 	}
 
 	err = bcrypt.CompareHashAndPassword(
-		[]byte(organizer.PasswordHash),
+		[]byte(user.PasswordHash),
 		[]byte(password),
 	)
 	if err != nil {
@@ -131,7 +160,7 @@ func (s *AuthService) Login(
 	}
 
 	token, err := middleware.GenerateToken(
-		*organizer, middleware.DefaultTokenTTL,
+		*user, middleware.DefaultTokenTTL,
 	)
 	if err != nil {
 		return "", fmt.Errorf("generating token: %w", err)
@@ -140,19 +169,27 @@ func (s *AuthService) Login(
 	return token, nil
 }
 
-// GetOrganizer returns an organizer by ID for session resolution.
-func (s *AuthService) GetOrganizer(
+// GetUser returns a user by ID for session resolution.
+func (s *AuthService) GetUser(
 	ctx context.Context,
 	id string,
-) (*models.Organizer, error) {
-	organizer, err := s.repo.FindByID(ctx, id)
+) (*models.User, error) {
+	user, err := s.repo.FindByID(ctx, id)
 	if err != nil {
-		return nil, fmt.Errorf("finding organizer: %w", err)
+		return nil, fmt.Errorf("finding user: %w", err)
 	}
 
-	if organizer == nil {
+	if user == nil {
 		return nil, ErrInvalidCredentials
 	}
 
-	return organizer, nil
+	return user, nil
+}
+
+// GetOrganizer is kept as a compatibility wrapper while handlers migrate.
+func (s *AuthService) GetOrganizer(
+	ctx context.Context,
+	id string,
+) (*models.User, error) {
+	return s.GetUser(ctx, id)
 }

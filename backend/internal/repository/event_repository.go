@@ -69,6 +69,27 @@ func (r *EventRepository) FindAllByOrganizer(
 	return events, nil
 }
 
+// FindAllByAttendeeUser returns all events where the user is a linked attendee.
+func (r *EventRepository) FindAllByAttendeeUser(
+	ctx context.Context,
+	userID uuid.UUID,
+) ([]models.Event, error) {
+	var events []models.Event
+
+	err := r.db.WithContext(ctx).
+		Model(&models.Event{}).
+		Distinct("events.*").
+		Joins("JOIN attendees ON attendees.event_id = events.id").
+		Where("attendees.user_id = ?", userID).
+		Order("events.created_at DESC").
+		Find(&events).Error
+	if err != nil {
+		return nil, err
+	}
+
+	return events, nil
+}
+
 // Update applies partial updates scoped to the owner.
 func (r *EventRepository) Update(
 	ctx context.Context,

@@ -75,6 +75,27 @@ type EventService struct {
 	repo EventRepo
 }
 
+type attendeeEventRepo interface {
+	FindAllByAttendeeUser(
+		ctx context.Context,
+		userID uuid.UUID,
+	) ([]models.Event, error)
+}
+
+const (
+	EventListViewOrganizing = "organizing"
+	EventListViewAttending  = "attending"
+	EventListViewAll        = "all"
+)
+
+// EventListResult supports dashboard list views for owned and attended events.
+type EventListResult struct {
+	View             string
+	Events           []models.Event
+	OrganizingEvents []models.Event
+	AttendingEvents  []models.Event
+}
+
 // NewEventService returns a service backed by the concrete repo.
 func NewEventService(
 	repo *repository.EventRepository,
@@ -173,6 +194,77 @@ func (s *EventService) ListEvents(
 	}
 
 	return events, nil
+}
+
+// ListEventsByView returns event lists for organizing, attending, or both views.
+func (s *EventService) ListEventsByView(
+	ctx context.Context,
+	userID uuid.UUID,
+	view string,
+) (*EventListResult, error) {
+	resolvedView := normalizeEventListView(view)
+	if resolvedView == "" {
+		return nil, fmt.Errorf(
+			"%w: view must be organizing, attending, or all",
+			ErrInvalidEventInput,
+		)
+	}
+
+	result := &EventListResult{View: resolvedView}
+
+	switch resolvedView {
+	case EventListViewOrganizing:
+		events, err := s.repo.FindAllByOrganizer(ctx, userID)
+		if err != nil {
+			return nil, fmt.Errorf("listing organizing events: %w", err)
+		}
+		result.Events = events
+		result.OrganizingEvents = events
+		return result, nil
+	case EventListViewAttending:
+		events, err := s.listAttendingEvents(ctx, userID)
+		if err != nil {
+			return nil, fmt.Errorf("listing attending events: %w", err)
+		}
+		result.Events = events
+		result.AttendingEvents = events
+		return result, nil
+	case EventListViewAll:
+		organizingEvents, err := s.repo.FindAllByOrganizer(ctx, userID)
+		if err != nil {
+			return nil, fmt.Errorf("listing organizing events: %w", err)
+		}
+
+		attendingEvents, err := s.listAttendingEvents(ctx, userID)
+		if err != nil {
+			return nil, fmt.Errorf("listing attending events: %w", err)
+		}
+
+		result.Events = organizingEvents
+		result.OrganizingEvents = organizingEvents
+		result.AttendingEvents = attendingEvents
+		return result, nil
+	default:
+		return nil, fmt.Errorf(
+			"%w: unsupported list view",
+			ErrInvalidEventInput,
+		)
+	}
+}
+
+func (s *EventService) listAttendingEvents(
+	ctx context.Context,
+	userID uuid.UUID,
+) ([]models.Event, error) {
+	attendeeRepo, ok := s.repo.(attendeeEventRepo)
+	if !ok {
+		return nil, fmt.Errorf(
+			"%w: attending view is not available",
+			ErrInvalidEventInput,
+		)
+	}
+
+	return attendeeRepo.FindAllByAttendeeUser(ctx, userID)
 }
 
 // GetEvent returns a single event scoped to the organizer.
@@ -365,6 +457,20 @@ func slugify(input string) string {
 	}
 
 	return out
+}
+
+func normalizeEventListView(view string) string {
+	view = strings.ToLower(strings.TrimSpace(view))
+	if view == "" {
+		return EventListViewOrganizing
+	}
+
+	switch view {
+	case EventListViewOrganizing, EventListViewAttending, EventListViewAll:
+		return view
+	default:
+		return ""
+	}
 }
 
 func randomAlphaNumeric(n int) (string, error) {

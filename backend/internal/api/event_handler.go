@@ -2,6 +2,7 @@ package api
 
 import (
 	"errors"
+	"strings"
 	"time"
 
 	"github.com/eventiofoss/eventio/backend/internal/middleware"
@@ -79,7 +80,7 @@ func (h *Handler) CreateEvent(c *fiber.Ctx) error {
 	})
 }
 
-// ListEvents returns all events owned by the authenticated organizer.
+// ListEvents returns organizing and/or attending event views for the user.
 func (h *Handler) ListEvents(c *fiber.Ctx) error {
 	organizerID, err := organizerIDFromContext(c)
 	if err != nil {
@@ -88,16 +89,26 @@ func (h *Handler) ListEvents(c *fiber.Ctx) error {
 		)
 	}
 
-	events, err := h.Events.ListEvents(
-		c.Context(), organizerID,
-	)
+	view := strings.ToLower(strings.TrimSpace(c.Query("view")))
+	eventLists, err := h.Events.ListEventsByView(c.Context(), organizerID, view)
 	if err != nil {
+		if errors.Is(err, service.ErrInvalidEventInput) {
+			return c.Status(fiber.StatusBadRequest).JSON(
+				fiber.Map{"error": err.Error()},
+			)
+		}
+
 		return c.Status(fiber.StatusInternalServerError).JSON(
 			fiber.Map{"error": "Could not fetch events"},
 		)
 	}
 
-	return c.JSON(fiber.Map{"events": events})
+	return c.JSON(fiber.Map{
+		"view":              eventLists.View,
+		"events":            eventLists.Events,
+		"organizing_events": eventLists.OrganizingEvents,
+		"attending_events":  eventLists.AttendingEvents,
+	})
 }
 
 // GetEvent returns a single organizer-owned event by ID.

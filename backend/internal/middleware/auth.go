@@ -15,28 +15,28 @@ import (
 const (
 	// DefaultTokenTTL is the current login session duration.
 	DefaultTokenTTL = 24 * time.Hour
-	// SessionCookieName is the cookie name used for organizer sessions.
+	// SessionCookieName is the cookie name used for user sessions.
 	SessionCookieName = "eventio_jwt"
 	claimsContextKey  = "auth_claims"
 )
 
-// Claims holds the organizer identity stored in the session token.
+// Claims holds the user identity stored in the session token.
 type Claims struct {
-	Role models.OrganizerRole `json:"role"`
+	Role models.UserRole `json:"role"`
 	jwt.RegisteredClaims
 }
 
-// GenerateToken signs a JWT for the given organizer.
-func GenerateToken(organizer models.Organizer, ttl time.Duration) (string, error) {
+// GenerateToken signs a JWT for the given user.
+func GenerateToken(user models.User, ttl time.Duration) (string, error) {
 	secret, err := jwtSecret()
 	if err != nil {
 		return "", err
 	}
 
 	claims := Claims{
-		Role: organizer.Role,
+		Role: user.Role,
 		RegisteredClaims: jwt.RegisteredClaims{
-			Subject:   organizer.ID.String(),
+			Subject:   user.ID.String(),
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(ttl)),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 		},
@@ -82,13 +82,13 @@ func ParseToken(tokenString string) (*Claims, error) {
 	return claims, nil
 }
 
-// ClaimsFromContext returns organizer claims stored by auth middleware.
+// ClaimsFromContext returns user claims stored by auth middleware.
 func ClaimsFromContext(c *fiber.Ctx) (*Claims, bool) {
 	claims, ok := c.Locals(claimsContextKey).(*Claims)
 	return claims, ok
 }
 
-// RequireAuth ensures the request carries a valid organizer session.
+// RequireAuth ensures the request carries a valid user session.
 func RequireAuth() fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		tokenString := c.Cookies(SessionCookieName)
@@ -110,8 +110,8 @@ func RequireAuth() fiber.Handler {
 	}
 }
 
-// RequireRoles restricts access to the provided organizer roles.
-func RequireRoles(roles ...models.OrganizerRole) fiber.Handler {
+// RequireRoles restricts access to the provided account roles.
+func RequireRoles(roles ...models.UserRole) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		claims, ok := ClaimsFromContext(c)
 		if !ok {

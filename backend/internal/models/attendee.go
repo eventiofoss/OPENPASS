@@ -24,6 +24,7 @@ const (
 type Attendee struct {
 	ID             uuid.UUID       `gorm:"type:uuid;primaryKey" json:"id"`
 	EventID        uuid.UUID       `gorm:"type:uuid;not null;index;uniqueIndex:idx_attendees_event_email" json:"event_id"`
+	UserID         *uuid.UUID      `gorm:"type:uuid;index" json:"user_id,omitempty"`
 	Email          string          `gorm:"not null;index;uniqueIndex:idx_attendees_event_email" json:"email"`
 	Name           string          `gorm:"not null" json:"name"`
 	FormData       json.RawMessage `gorm:"type:jsonb;not null;default:'{}'" json:"form_data"`
@@ -36,6 +37,7 @@ type Attendee struct {
 	UpdatedAt      time.Time       `json:"updated_at"`
 
 	Event   Event    `gorm:"foreignKey:EventID" json:"-"`
+	User    *User    `gorm:"foreignKey:UserID" json:"-"`
 	Payment *Payment `gorm:"foreignKey:AttendeeID" json:"-"`
 	CheckIn *CheckIn `gorm:"foreignKey:AttendeeID" json:"-"`
 }

@@ -36,6 +36,11 @@ type RegistrationRepo interface {
 	) (repository.RegistrationOutcome, error)
 }
 
+// RegistrationUserRepo defines user lookups used for attendee linking.
+type RegistrationUserRepo interface {
+	FindByEmail(ctx context.Context, email string) (*models.User, error)
+}
+
 // RegisterAttendeeInput carries registration payload.
 type RegisterAttendeeInput struct {
 	EventID  uuid.UUID
@@ -46,17 +51,34 @@ type RegisterAttendeeInput struct {
 
 // RegistrationService contains registration business logic.
 type RegistrationService struct {
-	repo RegistrationRepo
+	repo     RegistrationRepo
+	userRepo RegistrationUserRepo
 }
 
 // NewRegistrationService returns a service backed by concrete repository.
-func NewRegistrationService(repo *repository.AttendeeRepository) *RegistrationService {
-	return &RegistrationService{repo: repo}
+func NewRegistrationService(
+	repo *repository.AttendeeRepository,
+	userRepo ...RegistrationUserRepo,
+) *RegistrationService {
+	service := &RegistrationService{repo: repo}
+	if len(userRepo) > 0 {
+		service.userRepo = userRepo[0]
+	}
+
+	return service
 }
 
 // NewRegistrationServiceWithRepo returns a service using any RegistrationRepo.
-func NewRegistrationServiceWithRepo(repo RegistrationRepo) *RegistrationService {
-	return &RegistrationService{repo: repo}
+func NewRegistrationServiceWithRepo(
+	repo RegistrationRepo,
+	userRepo ...RegistrationUserRepo,
+) *RegistrationService {
+	service := &RegistrationService{repo: repo}
+	if len(userRepo) > 0 {
+		service.userRepo = userRepo[0]
+	}
+
+	return service
 }
 
 // RegisterAttendee creates attendee and updates event counter atomically.
@@ -89,6 +111,17 @@ func (s *RegistrationService) RegisterAttendee(
 		FormData: formData,
 		QRHash:   uuid.NewString(),
 		Status:   models.AttendeeStatusPending,
+	}
+
+	if s.userRepo != nil {
+		user, err := s.userRepo.FindByEmail(ctx, email)
+		if err != nil {
+			return nil, fmt.Errorf("looking up user by email: %w", err)
+		}
+		if user != nil {
+			userID := user.ID
+			attendee.UserID = &userID
+		}
 	}
 
 	outcome, err := s.repo.CreateForEvent(ctx, input.EventID, attendee)

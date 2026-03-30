@@ -256,7 +256,7 @@ func (h *Handler) checkoutIdentityFromSession(
 
 	if claims, ok := middleware.ClaimsFromContext(c); ok &&
 		claims != nil && claims.Subject != "" {
-		return h.lookupOrganizerIdentity(c, claims.Subject)
+		return h.lookupUserIdentity(c, claims.Subject)
 	}
 
 	tokenString := strings.TrimSpace(
@@ -272,22 +272,22 @@ func (h *Handler) checkoutIdentityFromSession(
 		return "", "", false, nil
 	}
 
-	return h.lookupOrganizerIdentity(c, claims.Subject)
+	return h.lookupUserIdentity(c, claims.Subject)
 }
 
-func (h *Handler) lookupOrganizerIdentity(
+func (h *Handler) lookupUserIdentity(
 	c *fiber.Ctx,
 	subject string,
 ) (string, string, bool, error) {
-	organizer, err := h.Auth.GetOrganizer(c.Context(), subject)
+	user, err := h.Auth.GetUser(c.Context(), subject)
 	if err != nil {
 		return "", "", false, err
 	}
-	if organizer == nil {
+	if user == nil {
 		return "", "", false, service.ErrInvalidCredentials
 	}
 
-	return organizer.Name, organizer.Email, true, nil
+	return user.Name, user.Email, true, nil
 }
 
 func validateGuestCheckoutIdentity(name, email string) error {

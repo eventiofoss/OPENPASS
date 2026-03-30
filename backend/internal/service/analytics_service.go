@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/eventiofoss/eventio/backend/internal/models"
 	"github.com/eventiofoss/eventio/backend/internal/repository"
 	"github.com/google/uuid"
 )
@@ -24,6 +25,15 @@ type AnalyticsRepo interface {
 	) error
 }
 
+// AnalyticsEventRepo defines only the event lookups analytics requires.
+type AnalyticsEventRepo interface {
+	FindByIDAndOrganizer(
+		ctx context.Context,
+		eventID uuid.UUID,
+		organizerID uuid.UUID,
+	) (*models.Event, error)
+}
+
 // DashboardData is the analytics JSON response payload.
 type DashboardData struct {
 	TicketsSold  int     `json:"tickets_sold"`
@@ -36,7 +46,7 @@ type DashboardData struct {
 // AnalyticsService contains analytics business logic.
 type AnalyticsService struct {
 	analytics AnalyticsRepo
-	events    EventRepo
+	events    AnalyticsEventRepo
 }
 
 // NewAnalyticsService returns a service backed by
@@ -55,7 +65,7 @@ func NewAnalyticsService(
 // any AnalyticsRepo and EventRepo for testing.
 func NewAnalyticsServiceWithRepo(
 	analytics AnalyticsRepo,
-	events EventRepo,
+	events AnalyticsEventRepo,
 ) *AnalyticsService {
 	return &AnalyticsService{
 		analytics: analytics,

@@ -133,8 +133,8 @@ func main() {
 	})
 
 	// Build dependency chain: repository → service → handler
-	orgRepo := repository.NewOrganizerRepository(db)
-	authSvc := service.NewAuthService(orgRepo)
+	userRepo := repository.NewUserRepository(db)
+	authSvc := service.NewAuthService(userRepo)
 
 	eventRepo := repository.NewEventRepository(db)
 	eventSvc := service.NewEventService(eventRepo)
@@ -143,7 +143,7 @@ func main() {
 	formSvc := service.NewFormService(formRepo, eventRepo)
 
 	attendeeRepo := repository.NewAttendeeRepository(db)
-	registrationSvc := service.NewRegistrationService(attendeeRepo)
+	registrationSvc := service.NewRegistrationService(attendeeRepo, userRepo)
 
 	paymentGateway, paymentEnabled := configuredPaymentGateway()
 	var paymentSvc *service.PaymentService
