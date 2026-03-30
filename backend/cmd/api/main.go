@@ -93,19 +93,17 @@ func main() {
 		c.Set("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
 		return c.Next()
 	})
+	csrfCookieDomain := resolveCSRFCookieDomain(isProd)
 	app.Use(csrf.New(csrf.Config{
 		KeyLookup:      "header:X-CSRF-Token",
 		CookieName:     "eventio_csrf",
 		CookieHTTPOnly: false,
 		CookieSecure:   isProd,
+		CookieDomain:   csrfCookieDomain,
 		CookieSameSite: "Strict",
 		Expiration:     30 * time.Minute,
 		Next: func(c *fiber.Ctx) bool {
-			switch c.Method() {
-			case fiber.MethodGet, fiber.MethodHead, fiber.MethodOptions:
-				return true
-			}
-
+			// Webhooks come from external gateways and cannot provide our CSRF token.
 			return strings.HasPrefix(c.Path(), "/api/webhooks/")
 		},
 	}))
@@ -290,6 +288,24 @@ func parseTrustedProxies(raw string) []string {
 	}
 
 	return out
+}
+
+func resolveCSRFCookieDomain(isProd bool) string {
+	if !isProd {
+		return ""
+	}
+
+	domain := strings.TrimSpace(os.Getenv("CSRF_COOKIE_DOMAIN"))
+	if domain == "" {
+		return ""
+	}
+
+	normalized := strings.TrimPrefix(strings.ToLower(domain), ".")
+	if normalized == "localhost" || normalized == "127.0.0.1" || normalized == "::1" {
+		return ""
+	}
+
+	return domain
 }
 
 func authLimiterConfig(isProd bool) limiter.Config {

@@ -19,6 +19,7 @@ backend/*.so
 backend/*.dylib
 backend/*.test
 backend/*.out
+backend/api
 
 # Frontend (SvelteKit / Node)
 frontend/node_modules/

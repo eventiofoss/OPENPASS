@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { goto } from "$app/navigation";
+	import { registerUser } from "$lib/api/auth";
 	import Navbar from "$lib/components/Navbar.svelte";
 	import { Button } from "$lib/components/ui/button/index.js";
 	import { Input } from "$lib/components/ui/input/index.js";
@@ -47,6 +49,8 @@
 	let useCase = $state("");
 	let idFiles = $state<FileList | undefined>(undefined);
 	let confirmsReview = $state(false);
+	let submitError = $state("");
+	let isSubmitting = $state(false);
 
 	function canContinue(stepIndex: number) {
 		if (stepIndex === 0) {
@@ -74,21 +78,45 @@
 
 	function nextStep() {
 		if (currentStep < steps.length - 1 && canContinue(currentStep)) {
+			submitError = "";
 			currentStep += 1;
 		}
 	}
 
 	function previousStep() {
 		if (currentStep > 0) {
+			submitError = "";
 			currentStep -= 1;
 		}
 	}
 
-	function submitApplication(event: SubmitEvent) {
+	async function submitApplication(event: SubmitEvent) {
 		event.preventDefault();
+		submitError = "";
 
-		if (canContinue(steps.length - 1)) {
+		if (!canContinue(steps.length - 1)) {
+			return;
+		}
+
+		isSubmitting = true;
+
+		try {
+			await registerUser(fetch, {
+				name: fullName.trim(),
+				email: email.trim(),
+				password,
+				role: "organizer",
+			});
+
 			submitted = true;
+			await goto("/organizer/login");
+		} catch (err: unknown) {
+			submitted = false;
+			submitError = err instanceof Error
+				? err.message
+				: "Failed to create organizer account.";
+		} finally {
+			isSubmitting = false;
 		}
 	}
 
@@ -310,7 +338,7 @@
 						class="mt-6 max-w-xl font-sans text-lg
 							leading-8 text-[#141414]/80 sm:text-xl"
 					>
-						{steps[currentStep].copy}
+						{submitError || steps[currentStep].copy}
 					</p>
 
 					<div class="mt-8 flex gap-3">
@@ -592,9 +620,9 @@
 										border-[#3D6B8C] bg-card px-5
 										font-sans text-lg text-[#3D6B8C]
 										hover:bg-[#3D6B8C]/6"
-									disabled={!canContinue(currentStep)}
+									disabled={!canContinue(currentStep) || isSubmitting}
 								>
-									Submit for Review
+									{isSubmitting ? "Submitting..." : "Submit for Review"}
 								</Button>
 							{/if}
 						</div>
