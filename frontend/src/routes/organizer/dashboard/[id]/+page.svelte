@@ -70,7 +70,7 @@
 	}
 </script>
 
-<div class="space-y-6 p-6 lg:p-8">
+<div class="space-y-6">
 	<!-- Event header -->
 	<div
 		class="border border-[#141414]/10 bg-card p-6 sm:p-7"

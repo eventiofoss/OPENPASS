@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { goto } from "$app/navigation";
 	import {
 		CalendarDays,
 		CircleDollarSign,
@@ -10,13 +11,12 @@
 		Trash2,
 		Users,
 	} from "@lucide/svelte";
-	import Footer from "$lib/components/Footer.svelte";
-	import Navbar from "$lib/components/Navbar.svelte";
 	import OrganizerEventPreview from
 		"$lib/components/OrganizerEventPreview.svelte";
 	import { Badge } from "$lib/components/ui/badge/index.js";
 	import { Button } from "$lib/components/ui/button/index.js";
 	import { Input } from "$lib/components/ui/input/index.js";
+	import { apiFetch } from "$lib/api/http";
 	import {
 		createOrganizerEvent,
 		setOrganizerEventFormFields,
@@ -83,12 +83,12 @@
 
 	const textareaClass =
 		"min-h-36 w-full rounded-none border border-[#141414]/14 bg-card " +
-		"px-4 py-4 font-sans text-lg leading-8 text-[#141414] " +
+		"px-4 py-4 font-sans text-base leading-7 text-[#141414] " +
 		"outline-none placeholder:text-[#141414]/45 focus:border-[#3D6B8C]";
 
 	const eventInputClass =
 		"h-14 rounded-none border-[#141414]/14 bg-card px-4 font-sans " +
-		"text-lg text-[#141414] placeholder:text-[#141414]/45";
+		"text-base text-[#141414] placeholder:text-[#141414]/45";
 
 	let eventDetails = $state(createEmptyEventDetails());
 	let visibilityMode = $state<VisibilityMode>("public");
@@ -97,8 +97,11 @@
 	let attendeeFields = $state<DraftFormField[]>([]);
 	let isSubmitting = $state(false);
 	let isRetryingFields = $state(false);
+	let isPublishing = $state(false);
 	let submitError = $state("");
+	let publishError = $state<string | null>(null);
 	let createdEvent = $state<CreatedEventState | null>(null);
+	let currentEventId = $derived(createdEvent?.id ?? "");
 
 	function createEmptyEventDetails() {
 		return {
@@ -405,6 +408,40 @@
 		}
 	}
 
+	async function publishEvent() {
+		if (!currentEventId) {
+			return;
+		}
+
+		isPublishing = true;
+		publishError = null;
+
+		try {
+			const response = await apiFetch(fetch, `/api/events/${currentEventId}`, {
+				method: "PATCH",
+				headers: {
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify({
+					status: "active",
+				}),
+			});
+
+			if (!response.ok) {
+				throw new Error("Failed to activate event. Please try again.");
+			}
+
+			await response.json();
+			await goto(`/organizer/dashboard/${currentEventId}`);
+		} catch (err: unknown) {
+			publishError = err instanceof Error
+				? err.message
+				: "Failed to activate event. Please try again.";
+		} finally {
+			isPublishing = false;
+		}
+	}
+
 	function resetForm() {
 		eventDetails = createEmptyEventDetails();
 		visibilityMode = "public";
@@ -414,6 +451,7 @@
 		isSubmitting = false;
 		isRetryingFields = false;
 		submitError = "";
+		publishError = null;
 		createdEvent = null;
 	}
 </script>
@@ -427,19 +465,12 @@
 	/>
 </svelte:head>
 
-<div class="flex min-h-screen flex-col">
-	<Navbar />
-
-	<main class="flex-1 px-8 py-8 sm:px-10 lg:px-12">
-		<section class="mx-auto max-w-7xl">
-			<div
-				class="border border-[#141414]/14 bg-card p-7 text-[#141414]
-					sm:p-8"
-			>
-				<div
-					class="flex flex-col gap-5 border-b border-[#141414]/10 pb-7
-						lg:flex-row lg:items-end lg:justify-between"
-				>
+<section>
+	<div
+		class="border border-[#141414]/14 bg-card p-6 text-[#141414]
+			sm:p-8"
+	>
+				<div class="border-b border-[#141414]/10 pb-7">
 					<div class="max-w-3xl">
 						<div class="flex flex-wrap gap-2">
 							<Badge
@@ -475,21 +506,11 @@
 							questions they need to answer before registering.
 						</p>
 					</div>
-
-					<div
-						class="border border-[#141414]/10 bg-[#141414]/3 p-5
-							font-sans text-base leading-7 text-[#141414]/74"
-					>
-						New events are created as
-						<span class="font-semibold text-[#141414]">drafts</span>
-						by the backend right now, so the public page stays hidden
-						until activation is supported.
-					</div>
 				</div>
 
 				<div class="mt-8 grid gap-8 lg:grid-cols-[minmax(0,1.25fr)_26rem]">
 					<form class="space-y-6" onsubmit={handleSubmit}>
-						<div class="border border-[#141414]/14 bg-card p-7 sm:p-8">
+						<div class="border border-[#141414]/14 bg-card p-6 sm:p-8">
 							<div class="flex items-start gap-4">
 								<div
 									class="flex h-11 w-11 shrink-0 items-center
@@ -551,9 +572,7 @@
 										id="event-description"
 										name="description"
 										bind:value={eventDetails.description}
-										placeholder="Describe the experience,
-											the agenda, and why someone should
-											register."
+										placeholder="Describe the experience, the agenda, and why someone should register."
 										class={textareaClass}
 									></textarea>
 								</div>
@@ -647,7 +666,7 @@
 							</div>
 						</div>
 
-						<div class="border border-[#141414]/14 bg-card p-7 sm:p-8">
+						<div class="border border-[#141414]/14 bg-card p-6 sm:p-8">
 							<div class="flex items-start gap-4">
 								<div
 									class="flex h-11 w-11 shrink-0 items-center
@@ -834,6 +853,7 @@
 										</div>
 									{/if}
 								</div>
+
 							</div>
 
 							<div
@@ -863,7 +883,7 @@
 							</div>
 						</div>
 
-						<div class="border border-[#141414]/14 bg-card p-7 sm:p-8">
+						<div class="border border-[#141414]/14 bg-card p-6 sm:p-8">
 							<div class="flex items-start gap-4">
 								<div
 									class="flex h-11 w-11 shrink-0 items-center
@@ -896,24 +916,26 @@
 								</div>
 							</div>
 
-							<div class="mt-7 flex flex-wrap gap-3">
+							<div class="mt-7 grid gap-3 md:grid-cols-2">
 								{#each fieldTypeOptions as option}
 									<Button
 										type="button"
 										variant="ghost"
-										class="h-auto rounded-none border
+										class="h-auto w-full rounded-none border
 											border-[#141414]/12 bg-card px-4 py-3
 											font-sans text-left text-[#141414]
+											whitespace-normal justify-start items-start
+											flex-col gap-1.5
 											hover:bg-[#141414]/3"
 										onclick={() => {
 											addField(option.value);
 										}}
 									>
-										<span class="block text-base font-medium">
+										<span class="block w-full text-base font-medium">
 											Add {option.label}
 										</span>
 										<span
-											class="mt-1 block max-w-52 text-sm
+											class="block w-full text-sm
 												leading-6 text-[#141414]/60"
 										>
 											{option.description}
@@ -1053,9 +1075,7 @@
 													<textarea
 														id={`field-options-${field.id}`}
 														bind:value={field.optionsText}
-														placeholder="Breakfast
-															Lunch
-															Dinner"
+														placeholder={"Breakfast\nLunch\nDinner"}
 														class="min-h-28 w-full
 															rounded-none border
 															border-[#141414]/14 bg-card
@@ -1080,7 +1100,7 @@
 							{/if}
 						</div>
 
-						<div class="border border-[#141414]/14 bg-card p-7 sm:p-8">
+						<div class="border border-[#141414]/14 bg-card p-6 sm:p-8">
 							<p
 								class="font-sans text-sm font-semibold uppercase
 									tracking-[0.3em] text-[#3D6B8C]"
@@ -1126,6 +1146,45 @@
 											still needs to be saved.
 										{/if}
 									</div>
+
+											<div
+												class="border border-[#141414]/12 bg-card p-4
+													shadow-sm"
+											>
+												<h3 class="font-sans text-lg font-medium text-[#141414]">
+													Ready to go live?
+												</h3>
+												<p
+													class="mt-2 font-sans text-sm leading-6
+														text-[#141414]/66"
+												>
+													Your draft is saved. Publish it now to make the
+													public event page visible and start accepting
+													registrations.
+												</p>
+
+												<div class="mt-4 flex flex-wrap items-center gap-4">
+													<button
+														type="button"
+														onclick={publishEvent}
+														disabled={isPublishing}
+														class="rounded-none border border-[#3D6B8C]
+															bg-card px-4 py-2 font-sans text-sm font-medium
+															text-[#3D6B8C] transition-colors
+															hover:bg-[#3D6B8C]/6 disabled:opacity-50"
+													>
+														{isPublishing
+															? "Publishing..."
+															: "Publish Event Live"}
+													</button>
+
+													{#if publishError}
+														<p class="font-sans text-sm text-[#a63c3c]">
+															{publishError}
+														</p>
+													{/if}
+												</div>
+											</div>
 								{/if}
 							</div>
 
@@ -1199,9 +1258,5 @@
 						fields={previewFields()}
 					/>
 				</div>
-			</div>
-		</section>
-	</main>
-
-	<Footer />
-</div>
+	</div>
+</section>

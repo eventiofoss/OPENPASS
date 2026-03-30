@@ -27,20 +27,20 @@
 	<Navbar />
 
 	<div
-		class="mx-auto flex w-full max-w-[90rem] flex-1
-			px-4 py-6 sm:px-6 lg:px-8"
+		class="mx-auto w-full max-w-[90rem] flex-1 px-4 pt-8 pb-8
+			sm:px-6 lg:px-8"
 	>
 		<div
-			class="grid w-full grid-cols-1
-				lg:grid-cols-[16rem_1fr]"
+			class="grid h-full grid-cols-1 gap-6
+				lg:grid-cols-[18rem_minmax(0,1fr)] lg:items-start lg:gap-8"
 		>
 			<!-- Sidebar -->
-			<div class="hidden lg:block">
+			<aside class="hidden w-72 shrink-0 lg:block">
 				<DashboardSidebar
 					events={data.events}
 					{activeEventId}
 				/>
-			</div>
+			</aside>
 
 			<!-- Main content -->
 			<main class="min-w-0">

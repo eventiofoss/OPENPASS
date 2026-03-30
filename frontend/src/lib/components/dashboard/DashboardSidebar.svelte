@@ -44,7 +44,7 @@
 </script>
 
 <aside
-	class="flex h-full flex-col border-r border-[#141414]/10
+	class="flex h-full flex-col border border-[#141414]/10
 		bg-card"
 >
 	<!-- Header -->
@@ -64,52 +64,66 @@
 
 	<!-- Event list -->
 	<nav
-		class="flex-1 space-y-0.5 overflow-y-auto px-3 py-3
+		class="flex-1 space-y-1 overflow-y-auto px-3 py-3
 			no-scrollbar"
 	>
-		{#each events as event (event.id)}
-			{@const isActive = event.id === activeEventId}
-			<a
-				href="/organizer/dashboard/{event.id}"
-				class="group flex flex-col gap-1.5 border px-4
-					py-3.5 transition-colors
-					{isActive
-					? 'border-[#3D6B8C]/25 bg-[#3D6B8C]/6'
-					: 'border-transparent hover:border-[#141414]/8 hover:bg-[#141414]/2'}"
+		{#if events.length === 0}
+			<div
+				class="mx-1 border border-dashed border-[#141414]/14
+					bg-[#141414]/2 p-4"
 			>
-				<p
-					class="line-clamp-1 font-sans text-sm
-						font-medium leading-snug
-						{isActive
-						? 'text-[#141414]'
-						: 'text-[#141414]/78'}"
-				>
-					{event.title}
+				<p class="font-sans text-sm font-medium text-[#141414]">
+					No events yet
 				</p>
-
-				<div class="flex items-center gap-2">
-					<Badge
-						variant="secondary"
-						class="rounded-none px-2 py-0 text-[10px]
-							font-semibold uppercase
-							tracking-[0.1em]
-							{statusColor(event.status)}"
+				<p class="mt-2 font-sans text-xs leading-6 text-[#141414]/60">
+					Create your first event to unlock analytics and attendee tools.
+				</p>
+			</div>
+		{:else}
+			{#each events as event (event.id)}
+				{@const isActive = event.id === activeEventId}
+				<a
+					href="/organizer/dashboard/{event.id}"
+					class="group flex flex-col gap-1.5 border px-4
+						py-3.5 transition-colors
+						{isActive
+						? 'border-[#3D6B8C]/25 bg-[#3D6B8C]/6'
+						: 'border-transparent hover:border-[#141414]/8 hover:bg-[#141414]/2'}"
+				>
+					<p
+						class="line-clamp-1 font-sans text-sm
+							font-medium leading-snug
+							{isActive
+							? 'text-[#141414]'
+							: 'text-[#141414]/78'}"
 					>
-						{event.status}
-					</Badge>
+						{event.title}
+					</p>
 
-					{#if event.start_date}
-						<span
-							class="flex items-center gap-1 text-xs
-								text-[#141414]/45"
+					<div class="flex items-center gap-2">
+						<Badge
+							variant="secondary"
+							class="rounded-none px-2 py-0 text-[10px]
+								font-semibold uppercase
+								tracking-[0.1em]
+								{statusColor(event.status)}"
 						>
-							<CalendarDays class="size-3" />
-							{formatDate(event.start_date)}
-						</span>
-					{/if}
-				</div>
-			</a>
-		{/each}
+							{event.status}
+						</Badge>
+
+						{#if event.start_date}
+							<span
+								class="flex items-center gap-1 text-xs
+									text-[#141414]/45"
+							>
+								<CalendarDays class="size-3" />
+								{formatDate(event.start_date)}
+							</span>
+						{/if}
+					</div>
+				</a>
+			{/each}
+		{/if}
 	</nav>
 
 	<!-- Create new -->
