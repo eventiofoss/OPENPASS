@@ -284,6 +284,7 @@ func (h *Handler) GetPublicEvent(c *fiber.Ctx) error {
 
 	return c.JSON(fiber.Map{
 		"event": fiber.Map{
+			"id":               event.ID,
 			"slug":             event.Slug,
 			"title":            event.Title,
 			"description":      event.Description,
