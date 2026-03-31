@@ -2,6 +2,7 @@
 	import Navbar from "$lib/components/Navbar.svelte";
 	import { Button } from "$lib/components/ui/button/index.js";
 	import { Input } from "$lib/components/ui/input/index.js";
+	import { goto, invalidateAll } from "$app/navigation";
 	import { loginUser } from "$lib/api/auth";
 
 	let email = $state("");
@@ -26,7 +27,8 @@
 		try {
 			await loginUser(fetch, { email, password });
 			submitted = true;
-			window.location.href = "/organizer/dashboard";
+			await invalidateAll();
+			await goto("/organizer/dashboard");
 		} catch (err: unknown) {
 			errorMsg = err instanceof Error
 				? err.message

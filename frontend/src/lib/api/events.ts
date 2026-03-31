@@ -1,6 +1,7 @@
 import { apiFetch, getApiBaseUrl } from './http';
 
 export interface PublicEvent {
+	id: string;
 	slug: string;
 	title: string;
 	description: string;

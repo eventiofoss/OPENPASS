@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { page } from "$app/stores";
 	import { Button } from "$lib/components/ui/button/index.js";
 	import * as DropdownMenu from "$lib/components/ui/dropdown-menu/index.js";
 </script>
@@ -44,7 +45,7 @@
 					Events
 				</a>
 				<a
-					href="/organizer/login"
+					href={$page.data.user ? '/organizer/dashboard' : '/organizer/login'}
 					class="px-4 py-2 text-sm font-semibold
 						uppercase tracking-widest text-accent
 						transition-colors

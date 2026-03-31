@@ -3,23 +3,27 @@
 
 	interface Props {
 		title: string;
-		imageColor: string;
+		imageColor?: string;
+		posterUrl?: string | null;
 		tags: string[];
 		date?: string;
 		time?: string;
+		href?: string;
 	}
 
 	let {
 		title,
-		imageColor,
+		imageColor = "#141414",
+		posterUrl,
 		tags,
 		date,
 		time,
+		href,
 	}: Props = $props();
 </script>
 
 <a
-	href="/events/{title.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')}"
+	href={href ?? `/events/${title.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')}`}
 	class="group block w-full min-w-[240px] flex-1
 		shrink-0"
 >
@@ -30,6 +34,13 @@
 			group-hover:scale-[1.01]"
 		style="background-color: {imageColor};"
 	>
+		{#if posterUrl}
+			<img
+				src={posterUrl}
+				alt={title}
+				class="absolute inset-0 h-full w-full object-cover"
+			/>
+		{/if}
 		<div
 			class="absolute inset-0 bg-gradient-to-t
 				from-black/30 to-transparent"

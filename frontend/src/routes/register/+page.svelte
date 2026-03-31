@@ -4,7 +4,6 @@
 	import { Input } from "$lib/components/ui/input/index.js";
 	import { registerUser } from "$lib/api/auth";
 
-	let selectedRole: "volunteer" | "participant" = $state("participant");
 	let fullName = $state("");
 	let email = $state("");
 	let password = $state("");
@@ -28,7 +27,7 @@
 					name: fullName.trim(),
 					email: email.trim(),
 					password: password,
-					role: selectedRole
+					role: "participant"
 				});
 				submitted = true;
 			} catch (err: any) {
@@ -93,16 +92,9 @@
 						leading-8 text-[#141414]/80
 						sm:text-xl"
 				>
-					{#if selectedRole === "volunteer"}
-						Create a volunteer account to help manage
-						events. You'll be able to scan
-						QR codes, manage check-ins, and
-						coordinate with organizers.
-					{:else}
-						Create a participant account to register for
-						events, track your passes, and get
-						notified about updates in one place.
-					{/if}
+					Create a participant account to register for
+					events, track your passes, and get
+					notified about updates in one place.
 				</p>
 
 				<div class="mt-6 space-y-3">
@@ -124,16 +116,9 @@
 								text-[#141414]/80
 								sm:text-xl"
 						>
-							{#if selectedRole === "volunteer"}
-								Access to the event
-								scanner, check-in tools,
-								and team coordination
-								dashboard once invited.
-							{:else}
-								Personalized event feed,
-								saved passes, and
-								registration history.
-							{/if}
+							Personalized event feed,
+							saved passes, and
+							registration history.
 						</p>
 					</div>
 
@@ -245,14 +230,14 @@
 							sm:text-xl"
 					>
 						Thanks, {fullName}. Your
-						{selectedRole} account has been
+						account has been
 						created. Sign in with {email} to
 						get started.
 					</p>
 
 					<div
 						class="mt-8 grid gap-4
-							sm:grid-cols-2"
+							sm:grid-cols-1"
 					>
 						<div
 							class="border
@@ -281,30 +266,6 @@
 									text-[#141414]/65"
 							>
 								{email}
-							</p>
-						</div>
-						<div
-							class="border
-								border-[#141414]/14
-								p-4"
-						>
-							<p
-								class="font-sans text-sm
-									font-semibold
-									uppercase
-									tracking-[0.2em]
-									text-[#3D6B8C]"
-							>
-								Role
-							</p>
-							<p
-								class="mt-3 font-sans
-									text-lg
-									text-[#141414]/80"
-							>
-								{selectedRole === "volunteer"
-									? "Volunteer"
-									: "Participant"}
 							</p>
 						</div>
 					</div>
@@ -368,47 +329,10 @@
 							leading-tight sm:text-6xl
 							lg:text-7xl"
 					>
-						{selectedRole === "volunteer"
-							? "Volunteer signup"
-							: "Join Open Pass"}
+						Join Open Pass
 					</h2>
 
-					<!-- Role Toggle -->
-					<div
-						class="mt-6 flex gap-0
-							border border-[#141414]/14"
-					>
-						<button
-							type="button"
-							class="flex-1 px-4 py-3
-								font-sans text-base
-								font-medium
-								transition-colors
-								{selectedRole === 'participant'
-									? 'bg-[#3D6B8C] text-white'
-									: 'bg-card text-[#141414]/70 hover:bg-[#141414]/5'}"
-							onclick={() =>
-								(selectedRole =
-									"participant")}
-						>
-							Participant
-						</button>
-						<button
-							type="button"
-							class="flex-1 px-4 py-3
-								font-sans text-base
-								font-medium
-								transition-colors
-								{selectedRole === 'volunteer'
-									? 'bg-[#3D6B8C] text-white'
-									: 'bg-card text-[#141414]/70 hover:bg-[#141414]/5'}"
-							onclick={() =>
-								(selectedRole =
-									"volunteer")}
-						>
-							Volunteer
-						</button>
-					</div>
+
 
 					{#if errorMsg}
 						<div class="mt-4 border border-red-500/20 bg-red-500/10 p-4 font-sans text-red-600">
@@ -518,13 +442,9 @@
 									text-[#141414]/75
 									sm:text-xl"
 							>
-								{#if selectedRole === "volunteer"}
-									Create a volunteer account to securely manage sign-ins using the scanner.
-								{:else}
-									Your account lets you
-									track your events and
-									history in one place.
-								{/if}
+								Your account lets you
+								track your events and
+								history in one place.
 							</div>
 
 							<div
@@ -544,12 +464,7 @@
 										hover:bg-[#3D6B8C]/6"
 									disabled={!canSubmit()}
 								>
-									Create{" "}
-									{selectedRole ===
-									"volunteer"
-										? "Volunteer"
-										: "Participant"}
-									{" "}Account
+									Create Participant Account
 								</Button>
 								<Button
 									href="/login"

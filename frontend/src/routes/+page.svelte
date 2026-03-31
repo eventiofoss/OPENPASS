@@ -10,67 +10,18 @@
 	import MapSection from "$lib/components/MapSection.svelte";
 	import Footer from "$lib/components/Footer.svelte";
 
-	const happeningNow = [
-		{
-			title: "La La Land Screening Festival 2026",
-			imageColor: "#FF6B9D",
-			tags: ["#screening", "#LA screening"],
-			date: undefined,
-			time: undefined,
-		},
-		{
-			title: "Lorem Posem Meetup",
-			imageColor: "#8B5CF6",
-			tags: ["#Tech", "#Registration"],
-			date: undefined,
-			time: undefined,
-		},
-		{
-			title: "From Data to Destination: Wiki Workshop",
-			imageColor: "#06B6D4",
-			tags: ["#FreeEntry", "#LetsExplore"],
-			date: undefined,
-			time: undefined,
-		},
-		{
-			title: "FOSS Meetup Kochi",
-			imageColor: "#F59E0B",
-			tags: ["#starting in 3hrs"],
-			date: undefined,
-			time: undefined,
-		},
-	];
+	import type { PageData } from './$types';
 
-	const discoverNearby = [
-		{
-			title: "La La Land Screening Festival 2026",
-			imageColor: "#EC4899",
-			tags: ["#FreeEntry", "#10 Registered"],
-			date: "9 Jun",
-			time: undefined,
-		},
-		{
-			title: "Lorem Posem Meetup",
-			imageColor: "#F97316",
-			tags: ["#FreeEntry", "#LA happening"],
-			date: "14 May, 7:00 AM",
-			time: undefined,
-		},
-		{
-			title: "From Data to Destination: Wiki Workshop",
-			imageColor: "#22D3EE",
-			tags: ["#FreeEntry", "#LA happening"],
-			date: "14 May",
-			time: undefined,
-		},
-		{
-			title: "FOSS Meetup Kochi",
-			imageColor: "#3B82F6",
-			tags: ["#FreeEntry"],
-			date: "12 Jul, 9:00 PM",
-			time: undefined,
-		},
-	];
+	let { data }: { data: PageData } = $props();
+
+	const happeningNow = $derived(data.happeningNow || []);
+	const discoverNearby = $derived(data.discoverNearby || []);
+
+	const colors = ["#FF6B9D", "#8B5CF6", "#06B6D4", "#F59E0B", "#EC4899", "#F97316", "#22D3EE", "#3B82F6"];
+	
+	function getColor(index: number) {
+		return colors[index % colors.length];
+	}
 </script>
 
 <svelte:head>
@@ -100,11 +51,15 @@
 						class="mt-10 grid grid-cols-2
 							gap-6 sm:grid-cols-4"
 					>
-						{#each happeningNow as event}
+						{#each happeningNow as event, i}
 							<EventCard
 								title={event.title}
-								imageColor={event.imageColor}
+								imageColor={getColor(i)}
+								posterUrl={event.posterUrl}
 								tags={event.tags}
+								date={event.dateLabel !== 'Date TBA' ? event.dateLabel : undefined}
+								time={event.timeLabel !== 'Time TBA' ? event.timeLabel : undefined}
+								href="/events/{event.slug}"
 							/>
 						{/each}
 					</div>
@@ -124,12 +79,15 @@
 						class="mt-10 grid grid-cols-2
 							gap-6 sm:grid-cols-4"
 					>
-						{#each discoverNearby as event}
+						{#each discoverNearby as event, i}
 							<EventCard
 								title={event.title}
-								imageColor={event.imageColor}
+								imageColor={getColor(i + happeningNow.length)}
+								posterUrl={event.posterUrl}
 								tags={event.tags}
-								date={event.date}
+								date={event.dateLabel !== 'Date TBA' ? event.dateLabel : undefined}
+								time={event.timeLabel !== 'Time TBA' ? event.timeLabel : undefined}
+								href="/events/{event.slug}"
 							/>
 						{/each}
 					</div>

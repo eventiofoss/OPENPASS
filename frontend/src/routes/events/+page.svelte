@@ -29,7 +29,7 @@
 </svelte:head>
 
 <div class="flex min-h-screen flex-col">
-	<Navbar user={data.user} />
+	<Navbar />
 
 	<main class="flex-1 px-6 py-8 sm:px-8 lg:px-12">
 		<div class="mx-auto max-w-7xl space-y-6">
@@ -82,14 +82,11 @@
 					{#each data.events as event}
 						<EventCard
 							title={event.title}
-							imageUrl={event.posterUrl}
+							posterUrl={event.posterUrl}
 							imageColor="#E6EAF0"
 							tags={event.tags}
 							date={event.dateLabel}
 							time={event.timeLabel}
-							location={event.venue}
-							status={event.statusLabel}
-							attendeeCount={event.attendeeCount}
 							href={`/events/${event.slug}`}
 						/>
 					{/each}
