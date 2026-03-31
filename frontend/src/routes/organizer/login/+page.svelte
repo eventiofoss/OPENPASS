@@ -29,6 +29,7 @@
 			submitted = true;
 			await invalidateAll();
 			await goto("/organizer/dashboard");
+			return;
 		} catch (err: unknown) {
 			errorMsg = err instanceof Error
 				? err.message

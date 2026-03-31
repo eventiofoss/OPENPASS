@@ -3,45 +3,41 @@
 		text-primary-foreground"
 >
 	<div
-		class="mx-auto flex max-w-7xl flex-col
-			items-center gap-12 px-8 py-20
-			sm:flex-row sm:items-start
-			sm:justify-between sm:px-10 lg:px-12"
+		class="mx-auto flex w-full max-w-[980px] flex-col items-center gap-12 px-6 py-16 sm:flex-row sm:items-start sm:justify-between sm:px-8"
 	>
 		<!-- Logo -->
-		<div class="flex items-center">
+		<div class="flex items-end gap-2">
 			<img
 				src="/open_pass_logo.svg"
 				alt="Open Pass"
-				class="h-14 invert"
+				class="h-16 invert sm:h-20"
 			/>
 			<span
-				class="ml-1 mt-auto text-sm
-					text-primary-foreground/50"
+				class="mb-1 text-base text-primary-foreground/55"
 			>
 				©
 			</span>
 		</div>
 
 		<!-- Nav Links -->
-		<nav class="flex flex-col items-center gap-4 sm:items-end">
+		<nav class="flex flex-col items-center gap-3 sm:items-end">
 			<a
 				href="/"
-				class="text-base text-primary-foreground/70
+				class="text-lg text-primary-foreground/75
 					transition-colors hover:text-primary-foreground"
 			>
 				Home
 			</a>
 			<a
 				href="/events"
-				class="text-base text-primary-foreground/70
+				class="text-lg text-primary-foreground/75
 					transition-colors hover:text-primary-foreground"
 			>
 				Events
 			</a>
 			<a
 				href="/organizer/login"
-				class="text-base text-accent
+				class="text-lg text-accent
 					transition-colors hover:text-accent/80"
 			>
 				Organize

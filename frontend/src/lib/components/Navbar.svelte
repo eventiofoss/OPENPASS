@@ -2,54 +2,60 @@
 	import { page } from "$app/stores";
 	import { Button } from "$lib/components/ui/button/index.js";
 	import * as DropdownMenu from "$lib/components/ui/dropdown-menu/index.js";
+
+	function isHomeActive(pathname: string): boolean {
+		return pathname === "/";
+	}
+
+	function isEventsActive(pathname: string): boolean {
+		return pathname.startsWith("/events");
+	}
+
+	function isOrganizerActive(pathname: string): boolean {
+		return pathname.startsWith("/organizer");
+	}
 </script>
 
 <nav
-	class="sticky top-6 z-50 mx-auto w-[95%] max-w-5xl
-		border border-border/50
-		bg-muted/60 backdrop-blur-md shadow-sm"
+	class="sticky top-0 z-50 w-full border-b border-[#EAEAEA] bg-white"
 >
 	<div
-		class="flex h-16 items-center
-			justify-between px-6 sm:px-8 lg:px-10"
+		class="mx-auto flex h-16 w-full max-w-[980px] items-center justify-between px-5 sm:px-6"
 	>
 		<!-- Logo + Nav Links -->
-		<div class="flex items-center gap-10">
+		<div class="flex items-center gap-8">
 			<a href="/" class="flex items-center">
 				<img
 					src="/open_pass_logo.svg"
 					alt="Open Pass"
-					class="h-8"
+					class="h-7"
 				/>
 			</a>
 			<div class="hidden items-center sm:flex">
 				<a
 					href="/"
-					class="px-4 py-2 text-sm font-semibold
-						uppercase tracking-widest
-						text-foreground/70
-						transition-colors
-						hover:text-foreground
-						underline"
+					class={"px-3 py-2 text-sm uppercase tracking-wide transition-colors hover:text-foreground " +
+						(isHomeActive($page.url.pathname)
+							? "font-semibold text-foreground underline underline-offset-4"
+							: "font-medium text-foreground/70")}
 				>
 					Home
 				</a>
 				<a
 					href="/events"
-					class="px-4 py-2 text-sm font-semibold
-						uppercase tracking-widest
-						text-foreground/70
-						transition-colors
-						hover:text-foreground"
+					class={"px-3 py-2 text-sm uppercase tracking-wide transition-colors hover:text-foreground " +
+						(isEventsActive($page.url.pathname)
+							? "font-semibold text-foreground underline underline-offset-4"
+							: "font-medium text-foreground/70")}
 				>
 					Events
 				</a>
 				<a
 					href={$page.data.user ? '/organizer/dashboard' : '/organizer/login'}
-					class="px-4 py-2 text-sm font-semibold
-						uppercase tracking-widest text-accent
-						transition-colors
-						hover:text-accent/80"
+					class={"px-3 py-2 text-sm uppercase tracking-wide transition-colors hover:text-foreground " +
+						(isOrganizerActive($page.url.pathname)
+							? "font-semibold text-foreground underline underline-offset-4"
+							: "font-medium text-foreground/70")}
 				>
 					Organize
 				</a>
