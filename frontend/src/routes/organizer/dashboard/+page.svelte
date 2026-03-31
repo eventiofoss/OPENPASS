@@ -14,7 +14,6 @@
 	import StatCard from "$lib/components/dashboard/StatCard.svelte";
 	import DashboardSidebar from
 		"$lib/components/dashboard/DashboardSidebar.svelte";
-	import AttendeeTable from "$lib/components/dashboard/AttendeeTable.svelte";
 
 	let { data } = $props<{ data: PageData }>();
 
@@ -29,7 +28,6 @@
 	let publicEvents = $derived(
 		events.filter((event: OrganizerEvent) => event.is_public).length
 	);
-	let featuredEvent = $derived(events[0]);
 
 	function formatDate(dateStr: string): string {
 		const date = new Date(dateStr);
@@ -219,12 +217,25 @@
 					/>
 				</div>
 
-				{#if featuredEvent}
-					<AttendeeTable
-						eventId={featuredEvent.id}
-						eventTitle={featuredEvent.title}
-					/>
-				{/if}
+				<div class="border border-[#141414]/10 bg-card p-6">
+					<p
+						class="font-sans text-xs font-semibold uppercase
+							tracking-[0.2em] text-[#3D6B8C]"
+					>
+						Event Tools
+					</p>
+					<h2
+						class="mt-4 font-serif text-3xl tracking-tight
+							text-[#141414]"
+					>
+						Exports now live inside each event
+					</h2>
+					<p class="mt-3 font-sans text-sm leading-7 text-[#141414]/65">
+						Open an event from the list to download attendee CSV data,
+						review analytics, and manage event-specific operations in one
+						place.
+					</p>
+				</div>
 			</div>
 		</div>
 	{:else}

@@ -30,6 +30,11 @@ export interface OrganizerEventDetail extends OrganizerEvent {
 	total_revenue: number;
 }
 
+export interface AttendeeExportFile {
+	blob: Blob;
+	fileName: string;
+}
+
 function buildUrl(path: string): string {
 	const baseUrl = getApiBaseUrl();
 
@@ -58,6 +63,38 @@ async function handleAuthError(
 		typeof data.error === 'string'
 	) {
 		return data.error;
+	}
+
+	return fallback;
+}
+
+function getExportFileName(
+	contentDisposition: string | null,
+	fallback: string
+): string {
+	if (!contentDisposition) {
+		return fallback;
+	}
+
+	const utf8Match = contentDisposition.match(
+		/filename\*=UTF-8''([^;]+)/i
+	);
+	if (utf8Match?.[1]) {
+		return decodeURIComponent(utf8Match[1]);
+	}
+
+	const quotedMatch = contentDisposition.match(
+		/filename="([^"]+)"/i
+	);
+	if (quotedMatch?.[1]) {
+		return quotedMatch[1];
+	}
+
+	const plainMatch = contentDisposition.match(
+		/filename=([^;]+)/i
+	);
+	if (plainMatch?.[1]) {
+		return plainMatch[1].trim();
 	}
 
 	return fallback;
@@ -122,7 +159,31 @@ export async function getEventDetail(
 	return data.event as OrganizerEventDetail;
 }
 
-/** Returns the URL for downloading the attendee CSV. */
-export function getExportUrl(eventId: string): string {
-	return buildUrl(`/${eventId}/export`);
+/** Downloads the attendee CSV for an organizer-owned event. */
+export async function downloadAttendeeExport(
+	fetchFn: typeof fetch,
+	eventId: string,
+	fallbackFileName = 'attendees.csv'
+): Promise<AttendeeExportFile> {
+	const res = await apiFetch(
+		fetchFn,
+		buildUrl(`/${eventId}/export`)
+	);
+
+	if (!res.ok) {
+		throw new Error(
+			await handleAuthError(
+				res,
+				'Failed to export attendee data.'
+			)
+		);
+	}
+
+	return {
+		blob: await res.blob(),
+		fileName: getExportFileName(
+			res.headers.get('content-disposition'),
+			fallbackFileName
+		)
+	};
 }
