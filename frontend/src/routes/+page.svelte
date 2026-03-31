@@ -23,6 +23,8 @@
 
 	const happeningNow = $derived(data.happeningNow || []);
 	const discoverNearby = $derived(data.discoverNearby || []);
+	const happeningNowSection = $derived(happeningNow.slice(0, 4));
+	const discoverNearbySection = $derived(discoverNearby.slice(0, 4));
 	const trimmedSearch = $derived(searchQuery.trim());
 	const normalizedSearch = $derived(trimmedSearch.toLowerCase());
 	const hasActiveSearch = $derived(trimmedSearch !== "");
@@ -35,19 +37,30 @@
 			: []
 	);
 
-	const colors = [
-		"#FF6B9D",
-		"#8B5CF6",
-		"#06B6D4",
-		"#F59E0B",
-		"#EC4899",
-		"#F97316",
-		"#22D3EE",
-		"#3B82F6",
+	const searchColors = [
+		"#F2F2F2",
+		"#CDB3FE",
+		"#FECEB4",
+		"#FEB4CA",
+		"#B4E1FE",
+		"#FEEDB4",
+		"#A882D9",
+	];
+	const happeningColors = [
+		"#F2F2F2",
+		"#FEEDB4",
+		"#CDB3FE",
+		"#B4E1FE",
+	];
+	const discoverColors = [
+		"#FECEB4",
+		"#FEB4CA",
+		"#B4E1FE",
+		"#CDB3FE",
 	];
 
-	function getColor(index: number) {
-		return colors[index % colors.length];
+	function pickColor(palette: string[], index: number): string {
+		return palette[index % palette.length];
 	}
 
 	function handleSearchInput(value: string) {
@@ -83,38 +96,34 @@
 	<Navbar />
 
 	<main class="flex-1">
-		<!-- Hero Section -->
-		<HeroSection
-			searchValue={searchQuery}
-			hasActiveSearch={hasActiveSearch}
-			resultCount={searchResults.length}
-			onSearchInput={handleSearchInput}
-			onFind={handleFind}
-			onOpenScanner={() => {
-				scannerOpen = true;
-			}}
-		/>
+		<div class="mx-auto w-full max-w-[980px] px-5 sm:px-6">
+			<!-- Hero Section -->
+			<HeroSection
+				searchValue={searchQuery}
+				hasActiveSearch={hasActiveSearch}
+				resultCount={searchResults.length}
+				onSearchInput={handleSearchInput}
+				onFind={handleFind}
+				onOpenScanner={() => {
+					scannerOpen = true;
+				}}
+			/>
 
-		{#if hasActiveSearch}
-			<section class="px-8 py-8 sm:px-10 lg:px-12">
-				<div
-					bind:this={searchResultsSection}
-					class="mx-auto max-w-7xl"
-				>
-					<div class="border border-border bg-card p-8 sm:p-12">
+			<div class="mt-[60px] space-y-[60px]">
+				{#if hasActiveSearch}
+					<section>
 						<div
-							class="flex flex-col gap-4 border-b border-border
-								pb-6 sm:flex-row sm:items-end
-								sm:justify-between"
+							bind:this={searchResultsSection}
+							class="w-full border border-[#D9D9D5] bg-white p-4 sm:p-6"
+						>
+						<div
+							class="flex flex-col gap-4 border-b border-[#D9D9D5] pb-5 sm:flex-row sm:items-end sm:justify-between"
 						>
 							<div>
-								<p
-									class="font-sans text-xs font-semibold uppercase
-										tracking-[0.2em] text-[#3D6B8C]"
-								>
+								<p class="text-xs font-semibold uppercase tracking-[0.2em] text-[#3D6B8C]">
 									Search Results
 								</p>
-								<h2 class="mt-3 font-serif text-4xl sm:text-5xl">
+								<h2 class="mt-2 font-serif text-[44px] leading-[0.92] font-normal tracking-[-0.01em] text-[#1E1E1E] sm:text-[48px]">
 									{searchResults.length}
 									event{searchResults.length === 1 ? "" : "s"}
 									matching "{trimmedSearch}"
@@ -124,9 +133,7 @@
 							<Button
 								type="button"
 								variant="outline"
-								class="h-12 rounded-none border-[#141414]/12
-									px-5 font-sans text-sm font-semibold
-									uppercase tracking-[0.12em]"
+								class="h-10 rounded-[2px] border-[#D9D9D5] px-4 text-sm font-medium text-[#1E1E1E]"
 								onclick={clearSearch}
 							>
 								Clear Search
@@ -134,16 +141,15 @@
 						</div>
 
 						{#if searchResults.length > 0}
-							<div
-								class="mt-10 grid grid-cols-2 gap-6
-									sm:grid-cols-4"
-							>
+							<div class="mt-7 grid grid-cols-1 justify-items-center gap-x-4 gap-y-8 sm:grid-cols-2 lg:grid-cols-4 lg:justify-items-start">
 								{#each searchResults as event, i}
 									<EventCard
 										title={event.title}
-										imageColor={getColor(i)}
+										imageColor={pickColor(searchColors, i)}
 										posterUrl={event.posterUrl}
 										tags={event.tags}
+										location={event.venue}
+										attendees={event.attendeeCount}
 										date={event.dateLabel !== 'Date TBA'
 											? event.dateLabel
 											: undefined}
@@ -155,32 +161,18 @@
 								{/each}
 							</div>
 						{:else}
-							<div
-								class="mt-10 border border-dashed
-									border-[#141414]/16 bg-[#141414]/2 p-8"
-							>
-								<p
-									class="font-serif text-3xl tracking-tight
-										text-[#141414]"
-								>
+							<div class="mt-7 border border-dashed border-[#D9D9D5] bg-[#141414]/2 p-6">
+								<p class="font-serif text-4xl leading-[0.95] text-[#141414]">
 									No event names matched yet
 								</p>
-								<p
-									class="mt-3 max-w-2xl font-sans text-base
-										leading-7 text-[#141414]/68"
-								>
-									Try a shorter event name, browse all published
-									events, or scan a QR code if you already have the
-									event pass or invite open.
+								<p class="mt-3 max-w-2xl text-base leading-7 text-[#141414]/68">
+									Try a shorter event name, browse all published events, or scan a QR code if you already have the event pass or invite open.
 								</p>
 
 								<div class="mt-6 flex flex-wrap gap-3">
 									<Button
 										type="button"
-										class="h-12 rounded-none bg-[#141414]
-											px-5 font-sans text-sm font-semibold
-											uppercase tracking-[0.12em]
-											text-white hover:bg-[#141414]/90"
+										class="h-10 rounded-[2px] bg-[#141414] px-4 text-sm font-medium text-white hover:bg-[#141414]/90"
 										onclick={() => {
 											scannerOpen = true;
 										}}
@@ -190,36 +182,31 @@
 									<Button
 										href="/events"
 										variant="outline"
-										class="h-12 rounded-none border-[#141414]/12
-											px-5 font-sans text-sm font-semibold
-											uppercase tracking-[0.12em]"
+										class="h-10 rounded-[2px] border-[#D9D9D5] px-4 text-sm font-medium text-[#1E1E1E]"
 									>
 										Browse Events
 									</Button>
 								</div>
 							</div>
 						{/if}
-					</div>
-				</div>
-			</section>
-		{:else}
-			<section class="px-8 py-8 sm:px-10 lg:px-12">
-				<div class="mx-auto max-w-7xl">
-					<div class="border border-border bg-card p-8 sm:p-12">
+						</div>
+					</section>
+				{:else}
+					<section>
+						<div class="w-full border border-[#D9D9D5] bg-white p-4 sm:p-6">
 						<SectionHeader
 							title="Happening Now"
 							viewAllHref="/events?filter=happening"
 						/>
-						<div
-							class="mt-10 grid grid-cols-2
-								gap-6 sm:grid-cols-4"
-						>
-							{#each happeningNow as event, i}
+						<div class="mt-7 grid grid-cols-1 justify-items-center gap-x-4 gap-y-8 sm:grid-cols-2 lg:grid-cols-4 lg:justify-items-start">
+							{#each happeningNowSection as event, i}
 								<EventCard
 									title={event.title}
-									imageColor={getColor(i)}
+									imageColor={pickColor(happeningColors, i)}
 									posterUrl={event.posterUrl}
 									tags={event.tags}
+									location={event.venue}
+									attendees={event.attendeeCount}
 									date={event.dateLabel !== 'Date TBA'
 										? event.dateLabel
 										: undefined}
@@ -230,29 +217,24 @@
 								/>
 							{/each}
 						</div>
-					</div>
-				</div>
-			</section>
+						</div>
+					</section>
 
-			<section class="px-8 py-14 sm:px-10 lg:px-12">
-				<div class="mx-auto max-w-7xl">
-					<div class="border border-border bg-card p-8 sm:p-12">
+					<section>
+						<div class="w-full border border-[#D9D9D5] bg-white p-4 sm:p-6">
 						<SectionHeader
 							title="Discover Nearby"
 							viewAllHref="/events?filter=nearby"
 						/>
-						<div
-							class="mt-10 grid grid-cols-2
-								gap-6 sm:grid-cols-4"
-						>
-							{#each discoverNearby as event, i}
+						<div class="mt-7 grid grid-cols-1 justify-items-center gap-x-4 gap-y-8 sm:grid-cols-2 lg:grid-cols-4 lg:justify-items-start">
+							{#each discoverNearbySection as event, i}
 								<EventCard
 									title={event.title}
-									imageColor={getColor(
-										i + happeningNow.length
-									)}
+									imageColor={pickColor(discoverColors, i)}
 									posterUrl={event.posterUrl}
 									tags={event.tags}
+									location={event.venue}
+									attendees={event.attendeeCount}
 									date={event.dateLabel !== 'Date TBA'
 										? event.dateLabel
 										: undefined}
@@ -263,27 +245,26 @@
 								/>
 							{/each}
 						</div>
-					</div>
-				</div>
-			</section>
-		{/if}
+						</div>
+					</section>
+				{/if}
 
-		<!-- Trending Organizers + Popular Topics -->
-		<section class="px-8 py-14 sm:px-10 lg:px-12">
-			<div class="mx-auto max-w-7xl">
-				<div class="grid grid-cols-1 gap-6 md:grid-cols-2">
-					<div class="border border-border bg-card p-8 sm:p-12">
-						<TrendingOrganizers />
+				<!-- Trending Organizers + Popular Topics -->
+				<section>
+					<div class="w-full grid grid-cols-1 gap-6 lg:grid-cols-2">
+						<div class="border border-[#D9D9D5] bg-white p-4 sm:p-6">
+							<TrendingOrganizers />
+						</div>
+						<div class="border border-[#D9D9D5] bg-white p-4 sm:p-6">
+							<PopularTopics />
+						</div>
 					</div>
-					<div class="border border-border bg-card p-8 sm:p-12">
-						<PopularTopics />
-					</div>
-				</div>
+				</section>
+
+				<!-- Map Section -->
+				<MapSection />
 			</div>
-		</section>
-
-		<!-- Map Section -->
-		<MapSection />
+		</div>
 	</main>
 
 	<Footer />
