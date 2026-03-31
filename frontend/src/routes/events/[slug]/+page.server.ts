@@ -7,6 +7,6 @@ export const load: PageServerLoad = async ({ params, fetch }) => {
 		const event = await getPublicEvent(fetch, params.slug);
 		return { event };
 	} catch (err: any) {
-		error(404, err.message || 'Event not found');
+		throw error(404, err.message || 'Event not found');
 	}
 };

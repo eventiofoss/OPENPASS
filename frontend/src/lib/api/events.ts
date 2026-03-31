@@ -45,6 +45,16 @@ export interface OrganizerFormFieldInput {
 	options?: string[];
 }
 
+export interface RegisterPublicAttendeeInput {
+	name: string;
+	email: string;
+	form_data?: Record<string, unknown>;
+}
+
+export interface RegisterPublicAttendeeResult {
+	id: string;
+}
+
 function getOrganizerEventsUrl(path = ''): string {
 	const baseUrl = getApiBaseUrl();
 
@@ -97,6 +107,48 @@ export async function getPublicEvent(
 
 	const data = await res.json();
 	return data.event as PublicEvent;
+}
+
+/** Registers a public attendee for a free event. */
+export async function registerPublicAttendee(
+	fetchFn: typeof fetch,
+	eventId: string,
+	input: RegisterPublicAttendeeInput
+): Promise<RegisterPublicAttendeeResult> {
+	const baseUrl = getApiBaseUrl();
+	const url =
+		typeof window === 'undefined'
+			? `${baseUrl}/api/events/${eventId}/register`
+			: `/api/events/${eventId}/register`;
+
+	const res = await apiFetch(fetchFn, url, {
+		method: 'POST',
+		headers: {
+			'Content-Type': 'application/json'
+		},
+		body: JSON.stringify({
+			name: input.name,
+			email: input.email,
+			form_data: input.form_data ?? {}
+		})
+	});
+
+	if (!res.ok) {
+		const data = await res.json().catch(() => ({}));
+		if (
+			typeof data === 'object' &&
+			data !== null &&
+			'error' in data &&
+			typeof data.error === 'string'
+		) {
+			throw new Error(data.error);
+		}
+
+		throw new Error('Failed to register for this event.');
+	}
+
+	const data = await res.json();
+	return data.attendee as RegisterPublicAttendeeResult;
 }
 
 /** Creates a new organizer-owned event draft. */

@@ -9,6 +9,7 @@
 
 	let { data }: { data: PageData } = $props();
 	const event = $derived({
+		id: data.event.id,
 		slug: data.event.slug,
 		title: data.event.title,
 		description: data.event.description,
@@ -33,9 +34,11 @@
 		{ name: "Priya S.", role: "Photography" },
 	];
 
-	let regName = $state("");
-	let regEmail = $state("");
-	let regSubmitted = $state(false);
+	let regName = $state(data.user?.name || data.guest?.name || "");
+	let regEmail = $state(data.user?.email || data.guest?.email || "");
+	let regSubmitted = $state((data.guest?.registered_event_ids || []).includes(data.event.id));
+	let regSubmitting = $state(false);
+	let regError = $state("");
 
 	function formatDate(iso: string): string {
 		const d = new Date(iso);
@@ -66,9 +69,38 @@
 		);
 	}
 
-	function handleRegister(e: SubmitEvent) {
+	import { invalidateAll } from '$app/navigation';
+	import { registerPublicAttendee } from '$lib/api/events';
+
+	async function handleRegister(e: SubmitEvent) {
 		e.preventDefault();
-		regSubmitted = true;
+
+		const name = regName.trim();
+		const email = regEmail.trim();
+		if (!name || !email) {
+			return;
+		}
+
+		regSubmitting = true;
+		regError = "";
+
+		try {
+			await registerPublicAttendee(fetch, event.id, {
+				name,
+				email,
+				form_data: {},
+			});
+			regSubmitted = true;
+			await invalidateAll(); // Force data hydration to refresh the UI state for the registered arrays
+		} catch (err: any) {
+			if (err.message && err.message.toLowerCase().includes("already registered")) {
+				regError = "This email is already registered for this event.";
+			} else {
+				regError = err?.message || "Registration failed. Please try again.";
+			}
+		} finally {
+			regSubmitting = false;
+		}
 	}
 </script>
 
