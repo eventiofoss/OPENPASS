@@ -179,7 +179,7 @@ func TestAnalyticsService_Dashboard_HappyPath(
 		)
 	}
 
-	expectedPct := 40.0 // 80/200 * 100
+	expectedPct := 75.0 // 150/200 * 100
 	if data.CapacityPct != expectedPct {
 		t.Errorf(
 			"expected %.1f%%, got %.1f%%",

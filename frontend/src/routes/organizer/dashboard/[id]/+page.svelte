@@ -1,10 +1,12 @@
 <script lang="ts">
+	import { invalidate } from "$app/navigation";
 	import {
 		Ticket,
 		UserCheck,
 		IndianRupee,
 		TrendingUp,
 	} from "@lucide/svelte";
+	import { onMount } from "svelte";
 	import { Badge } from "$lib/components/ui/badge/index.js";
 	import StatCard
 		from "$lib/components/dashboard/StatCard.svelte";
@@ -12,9 +14,15 @@
 		from "$lib/components/dashboard/CapacityGauge.svelte";
 	import AttendeeTable
 		from "$lib/components/dashboard/AttendeeTable.svelte";
+	import {
+		organizerAnalyticsDependency,
+		organizerEventDependency,
+		organizerEventsDependency,
+	} from "$lib/utils/organizer-dashboard";
 	import type { PageData } from "./$types";
 
 	let { data } = $props<{ data: PageData }>();
+	const analyticsRefreshIntervalMs = 15000;
 
 	let event = $derived(data.eventDetail);
 	let analytics = $derived(data.analytics);
@@ -68,6 +76,47 @@
 
 		return `${rate.toFixed(1)}%`;
 	}
+
+	function refreshDashboardData(): void {
+		void Promise.all([
+			invalidate(organizerEventsDependency),
+			invalidate(organizerEventDependency(event.id)),
+			invalidate(
+				organizerAnalyticsDependency(event.id)
+			),
+		]);
+	}
+
+	onMount(() => {
+		const handleFocus = () => {
+			refreshDashboardData();
+		};
+		const handleVisibilityChange = () => {
+			if (document.visibilityState === "visible") {
+				refreshDashboardData();
+			}
+		};
+		const interval = window.setInterval(() => {
+			if (document.visibilityState === "visible") {
+				refreshDashboardData();
+			}
+		}, analyticsRefreshIntervalMs);
+
+		window.addEventListener("focus", handleFocus);
+		document.addEventListener(
+			"visibilitychange",
+			handleVisibilityChange
+		);
+
+		return () => {
+			window.clearInterval(interval);
+			window.removeEventListener("focus", handleFocus);
+			document.removeEventListener(
+				"visibilitychange",
+				handleVisibilityChange
+			);
+		};
+	});
 </script>
 
 <div class="space-y-6">

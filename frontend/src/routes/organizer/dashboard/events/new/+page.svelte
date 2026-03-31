@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { goto } from "$app/navigation";
+	import { goto, invalidate } from "$app/navigation";
 	import {
 		CalendarDays,
 		CircleDollarSign,
@@ -17,6 +17,11 @@
 	import { Button } from "$lib/components/ui/button/index.js";
 	import { Input } from "$lib/components/ui/input/index.js";
 	import { apiFetch } from "$lib/api/http";
+	import {
+		organizerAnalyticsDependency,
+		organizerEventDependency,
+		organizerEventsDependency,
+	} from "$lib/utils/organizer-dashboard";
 	import {
 		createOrganizerEvent,
 		setOrganizerEventFormFields,
@@ -365,8 +370,10 @@
 				fieldCount,
 				formSaved: true,
 			};
+			await invalidate(organizerEventsDependency);
 		} catch (error) {
 			if (draftEvent) {
+				await invalidate(organizerEventsDependency);
 				createdEvent = {
 					id: draftEvent.id,
 					slug: draftEvent.slug,
@@ -432,6 +439,17 @@
 			}
 
 			await response.json();
+			await Promise.all([
+				invalidate(organizerEventsDependency),
+				invalidate(
+					organizerEventDependency(currentEventId)
+				),
+				invalidate(
+					organizerAnalyticsDependency(
+						currentEventId
+					)
+				),
+			]);
 			await goto(`/organizer/dashboard/${currentEventId}`);
 		} catch (err: unknown) {
 			publishError = err instanceof Error

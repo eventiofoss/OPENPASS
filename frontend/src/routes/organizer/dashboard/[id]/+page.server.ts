@@ -3,13 +3,20 @@ import {
 	getEventAnalytics,
 	getEventDetail,
 } from '$lib/api/analytics';
+import {
+	organizerAnalyticsDependency,
+	organizerEventDependency,
+} from '$lib/utils/organizer-dashboard';
 import { error } from '@sveltejs/kit';
 
 export const load: PageServerLoad = async ({
 	params,
 	fetch,
+	depends,
 }) => {
 	const eventId = params.id;
+	depends(organizerEventDependency(eventId));
+	depends(organizerAnalyticsDependency(eventId));
 
 	try {
 		const [eventDetail, analytics] = await Promise.all([

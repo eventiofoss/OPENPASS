@@ -1,9 +1,13 @@
 <script lang="ts">
+	import { invalidate } from "$app/navigation";
+	import { page } from "$app/state";
+	import { onMount } from "svelte";
 	import Navbar from "$lib/components/Navbar.svelte";
 	import Footer from "$lib/components/Footer.svelte";
 	import DashboardSidebar
 		from "$lib/components/dashboard/DashboardSidebar.svelte";
-	import { page } from "$app/state";
+	import { organizerEventsDependency } from
+		"$lib/utils/organizer-dashboard";
 	import type { LayoutData } from "./$types";
 
 	let { data, children } = $props<{
@@ -12,6 +16,35 @@
 	}>();
 
 	let activeEventId = $derived(page.params.id ?? "");
+
+	function refreshOrganizerEvents(): void {
+		void invalidate(organizerEventsDependency);
+	}
+
+	onMount(() => {
+		const handleFocus = () => {
+			refreshOrganizerEvents();
+		};
+		const handleVisibilityChange = () => {
+			if (document.visibilityState === "visible") {
+				refreshOrganizerEvents();
+			}
+		};
+
+		window.addEventListener("focus", handleFocus);
+		document.addEventListener(
+			"visibilitychange",
+			handleVisibilityChange
+		);
+
+		return () => {
+			window.removeEventListener("focus", handleFocus);
+			document.removeEventListener(
+				"visibilitychange",
+				handleVisibilityChange
+			);
+		};
+	});
 </script>
 
 <svelte:head>

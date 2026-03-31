@@ -104,7 +104,7 @@ func (s *AnalyticsService) GetDashboardData(
 
 	var capacityPct float64
 	if stats.Capacity > 0 {
-		capacityPct = float64(stats.CheckInCount) /
+		capacityPct = float64(stats.TicketsSold) /
 			float64(stats.Capacity) * 100
 	}
 
