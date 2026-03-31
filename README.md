@@ -2,7 +2,7 @@
 
 ![Logo](./frontend/static/thumbnail.png)
 
-# OPEN
+# OPENPASS
 
 **Free and Open Source Self Hostable Event Management Platform **
 
