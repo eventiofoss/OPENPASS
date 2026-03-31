@@ -21,6 +21,7 @@ import (
 	"github.com/eventiofoss/eventio/backend/internal/api"
 	"github.com/eventiofoss/eventio/backend/internal/database"
 	"github.com/eventiofoss/eventio/backend/internal/middleware"
+	"github.com/eventiofoss/eventio/backend/internal/models"
 	"github.com/eventiofoss/eventio/backend/internal/repository"
 	"github.com/eventiofoss/eventio/backend/internal/service"
 )
@@ -188,6 +189,9 @@ func main() {
 	checkinRepo := repository.NewCheckInRepository(db)
 	qrSvc := service.NewQRService(checkinRepo)
 
+	volunteerRepo := repository.NewVolunteerRepository(db)
+	volunteerSvc := service.NewVolunteerService(volunteerRepo, userRepo)
+
 	h := &api.Handler{
 		DB:           db,
 		Auth:         authSvc,
@@ -197,6 +201,8 @@ func main() {
 		Payment:      paymentSvc,
 		Analytics:    analyticsSvc,
 		QR:           qrSvc,
+		Volunteer:    volunteerSvc,
+		GuestRepo:    attendeeRepo,
 	}
 
 	// Authentication routes group
@@ -216,7 +222,8 @@ func main() {
 		h.Logout,
 	)
 
-	// Public event detail route (no auth middleware)
+	// Public event routes (no auth middleware)
+	app.Get("/api/public/events", h.ListPublicEvents)
 	app.Get("/api/public/events/:slug", h.GetPublicEvent)
 
 	// Public registration route (no auth middleware)
@@ -226,8 +233,14 @@ func main() {
 	app.Post("/api/events/:id/pay", paymentLimiter, h.CreateCheckout)
 	app.Post("/api/webhooks/:gateway", h.HandleWebhook)
 
+	// Guest session hydration
+	app.Get("/api/guest/session", h.GuestSession)
+
 	// Events routes group (protected)
-	eventsGroup := app.Group("/api/events", middleware.RequireAuth())
+	eventsGroup := app.Group("/api/events",
+		middleware.RequireAuth(),
+		middleware.RequireRoles(models.UserRoleOrganizer, models.UserRoleAdmin),
+	)
 	eventsGroup.Post("/", h.CreateEvent)
 	eventsGroup.Get("/", h.ListEvents)
 	eventsGroup.Get("/:id", h.GetEvent)
@@ -237,6 +250,9 @@ func main() {
 	eventsGroup.Get("/:id/forms", h.GetFormFields)
 	eventsGroup.Get("/:id/analytics", h.GetAnalytics)
 	eventsGroup.Get("/:id/export", h.ExportAttendees)
+	eventsGroup.Post("/:id/volunteers", h.AssignVolunteer)
+	eventsGroup.Get("/:id/volunteers", h.ListVolunteers)
+	eventsGroup.Delete("/:id/volunteers", h.RemoveVolunteer)
 
 	// Check-in scan route (protected)
 	app.Post(

@@ -82,6 +82,13 @@ type attendeeEventRepo interface {
 	) ([]models.Event, error)
 }
 
+type publicEventRepo interface {
+	FindPublicPublished(
+		ctx context.Context,
+		search string,
+	) ([]models.Event, error)
+}
+
 const (
 	EventListViewOrganizing = "organizing"
 	EventListViewAttending  = "attending"
@@ -265,6 +272,27 @@ func (s *EventService) listAttendingEvents(
 	}
 
 	return attendeeRepo.FindAllByAttendeeUser(ctx, userID)
+}
+
+// ListPublicEvents returns events visible in the public directory.
+func (s *EventService) ListPublicEvents(
+	ctx context.Context,
+	search string,
+) ([]models.Event, error) {
+	publicRepo, ok := s.repo.(publicEventRepo)
+	if !ok {
+		return nil, fmt.Errorf(
+			"%w: public listing is not available",
+			ErrInvalidEventInput,
+		)
+	}
+
+	events, err := publicRepo.FindPublicPublished(ctx, search)
+	if err != nil {
+		return nil, fmt.Errorf("listing public events: %w", err)
+	}
+
+	return events, nil
 }
 
 // GetEvent returns a single event scoped to the organizer.

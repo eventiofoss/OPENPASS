@@ -23,8 +23,8 @@ type Export struct {
 	Filename    string       `gorm:"not null" json:"filename"`
 	GeneratedAt time.Time    `gorm:"not null;autoCreateTime" json:"generated_at"`
 
-	Event     Event     `gorm:"foreignKey:EventID" json:"-"`
-	Organizer Organizer `gorm:"foreignKey:OrganizerID" json:"-"`
+	Event     Event `gorm:"foreignKey:EventID" json:"-"`
+	Organizer User  `gorm:"foreignKey:OrganizerID" json:"-"`
 }
 
 func (e *Export) BeforeCreate(_ *gorm.DB) error {

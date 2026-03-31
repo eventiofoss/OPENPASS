@@ -116,10 +116,19 @@ func (r *CheckInRepository) ProcessCheckIn(
 				return err
 			}
 
-			// Step 3: Verify organizer ownership.
+			// Step 3: Verify scanner is authorised (organizer or event volunteer).
 			if event.OrganizerID != scannedByID {
-				outcome = CheckInOutcomeNotEventOrganizer
-				return nil
+				var volunteerCount int64
+				if err := tx.
+					Model(&models.EventVolunteer{}).
+					Where("event_id = ? AND user_id = ?", eventID, scannedByID).
+					Count(&volunteerCount).Error; err != nil {
+					return err
+				}
+				if volunteerCount == 0 {
+					outcome = CheckInOutcomeNotEventOrganizer
+					return nil
+				}
 			}
 
 			// Step 4: Check venue capacity.

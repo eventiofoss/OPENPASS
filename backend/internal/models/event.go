@@ -38,7 +38,7 @@ type Event struct {
 	CreatedAt       time.Time   `json:"created_at"`
 	UpdatedAt       time.Time   `json:"updated_at"`
 
-	Organizer  Organizer   `gorm:"foreignKey:OrganizerID" json:"-"`
+	Organizer  User        `gorm:"foreignKey:OrganizerID" json:"-"`
 	FormFields []FormField `gorm:"foreignKey:EventID" json:"-"`
 	Attendees  []Attendee  `gorm:"foreignKey:EventID" json:"-"`
 	Exports    []Export    `gorm:"foreignKey:EventID" json:"-"`

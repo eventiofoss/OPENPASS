@@ -26,6 +26,13 @@ type Claims struct {
 	jwt.RegisteredClaims
 }
 
+// GuestClaims holds the stateless guest identity stored in the guest session token.
+type GuestClaims struct {
+	Email string `json:"email"`
+	Name  string `json:"name"`
+	jwt.RegisteredClaims
+}
+
 // GenerateToken signs a JWT for the given user.
 func GenerateToken(user models.User, ttl time.Duration) (string, error) {
 	secret, err := jwtSecret()
@@ -77,6 +84,55 @@ func ParseToken(tokenString string) (*Claims, error) {
 	claims, ok := token.Claims.(*Claims)
 	if !ok || !token.Valid {
 		return nil, errors.New("invalid token claims")
+	}
+
+	return claims, nil
+}
+
+// GenerateGuestToken signs a JWT for a guest registration payload.
+func GenerateGuestToken(email, name string, ttl time.Duration) (string, error) {
+	secret, err := jwtSecret()
+	if err != nil {
+		return "", err
+	}
+
+	claims := GuestClaims{
+		Email: email,
+		Name:  name,
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(ttl)),
+			IssuedAt:  jwt.NewNumericDate(time.Now()),
+		},
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	return token.SignedString([]byte(secret))
+}
+
+// ParseGuestToken validates a signed guest session token.
+func ParseGuestToken(tokenString string) (*GuestClaims, error) {
+	secret, err := jwtSecret()
+	if err != nil {
+		return nil, err
+	}
+
+	token, err := jwt.ParseWithClaims(
+		tokenString,
+		&GuestClaims{},
+		func(token *jwt.Token) (interface{}, error) {
+			if token.Method != jwt.SigningMethodHS256 {
+				return nil, errors.New("unexpected signing method")
+			}
+			return []byte(secret), nil
+		},
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	claims, ok := token.Claims.(*GuestClaims)
+	if !ok || !token.Valid {
+		return nil, errors.New("invalid guest token claims")
 	}
 
 	return claims, nil

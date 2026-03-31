@@ -111,6 +111,60 @@ func (h *Handler) ListEvents(c *fiber.Ctx) error {
 	})
 }
 
+// ListPublicEvents returns published public events without auth.
+func (h *Handler) ListPublicEvents(c *fiber.Ctx) error {
+	statusFilter := strings.ToLower(strings.TrimSpace(c.Query("status")))
+	if statusFilter == "" {
+		statusFilter = "published"
+	}
+
+	if statusFilter != "published" && statusFilter != "active" {
+		return c.Status(fiber.StatusBadRequest).JSON(
+			fiber.Map{"error": "status must be published or active"},
+		)
+	}
+
+	search := strings.TrimSpace(c.Query("search"))
+	events, err := h.Events.ListPublicEvents(c.Context(), search)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(
+			fiber.Map{"error": "Could not fetch public events"},
+		)
+	}
+
+	publicEvents := make([]fiber.Map, 0, len(events))
+	for _, event := range events {
+		if statusFilter == "active" && event.Status != models.EventStatusActive {
+			continue
+		}
+
+		organizerName := strings.TrimSpace(event.Organizer.Name)
+		if organizerName == "" {
+			organizerName = "Open Pass Organizer"
+		}
+
+		publicEvents = append(publicEvents, fiber.Map{
+			"id":               event.ID,
+			"slug":             event.Slug,
+			"title":            event.Title,
+			"description":      event.Description,
+			"poster_url":       event.PosterURL,
+			"venue":            event.Venue,
+			"start_date":       event.StartDate,
+			"capacity":         event.Capacity,
+			"total_registered": event.TotalRegistered,
+			"status":           event.Status,
+			"is_public":        event.IsPublic,
+			"organizer_name":   organizerName,
+		})
+	}
+
+	return c.JSON(fiber.Map{
+		"status": statusFilter,
+		"events": publicEvents,
+	})
+}
+
 // GetEvent returns a single organizer-owned event by ID.
 func (h *Handler) GetEvent(c *fiber.Ctx) error {
 	organizerID, err := organizerIDFromContext(c)

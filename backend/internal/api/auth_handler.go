@@ -74,7 +74,7 @@ func (h *Handler) Login(c *fiber.Ctx) error {
 		)
 	}
 
-	token, err := h.Auth.Login(
+	token, user, err := h.Auth.Login(
 		c.Context(), req.Email, req.Password,
 	)
 	if err != nil {
@@ -92,14 +92,21 @@ func (h *Handler) Login(c *fiber.Ctx) error {
 	c.Cookie(&fiber.Cookie{
 		Name:     middleware.SessionCookieName,
 		Value:    token,
+		Path:     "/",
 		Expires:  time.Now().Add(middleware.DefaultTokenTTL),
 		HTTPOnly: true,
 		Secure:   isProductionEnv(),
-		SameSite: fiber.CookieSameSiteStrictMode,
+		SameSite: fiber.CookieSameSiteLaxMode,
 	})
 
 	return c.JSON(fiber.Map{
 		"message": "Logged in successfully",
+		"user": fiber.Map{
+			"id":    user.ID,
+			"name":  user.Name,
+			"email": user.Email,
+			"role":  user.Role,
+		},
 	})
 }
 
@@ -127,20 +134,28 @@ func (h *Handler) Me(c *fiber.Ctx) error {
 	})
 }
 
-// Logout clears the user session cookie.
 func (h *Handler) Logout(c *fiber.Ctx) error {
 	c.Cookie(&fiber.Cookie{
-		Name:     middleware.SessionCookieName,
+		Name:     "eventio_jwt",
 		Value:    "",
-		Expires:  time.Now().Add(-time.Hour),
+		Path:     "/",
+		Expires:  time.Now().Add(-24 * time.Hour),
 		HTTPOnly: true,
-		Secure:   isProductionEnv(),
-		SameSite: fiber.CookieSameSiteStrictMode,
+		Secure:   isProductionEnv(), // Crucial for HTTPS
+		SameSite: fiber.CookieSameSiteLaxMode,
 	})
 
-	return c.JSON(fiber.Map{
-		"message": "Logged out successfully",
+	c.Cookie(&fiber.Cookie{
+		Name:     "guest_session",
+		Value:    "",
+		Path:     "/",
+		Expires:  time.Now().Add(-24 * time.Hour),
+		HTTPOnly: true,
+		Secure:   isProductionEnv(),
+		SameSite: fiber.CookieSameSiteLaxMode,
 	})
+
+	return c.JSON(fiber.Map{"message": "Logged out successfully"})
 }
 
 func isProductionEnv() bool {

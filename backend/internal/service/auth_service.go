@@ -76,19 +76,18 @@ func (s *AuthService) Register(
 		return nil, fmt.Errorf("hashing password: %w", err)
 	}
 
-	// Account role must be organizer, volunteer, or participant.
+	// Account role must be organizer or participant.
+	// Volunteers are event-scoped (assigned via event_volunteers table).
 	accountRole := models.UserRoleOrganizer
 	role = strings.ToLower(strings.TrimSpace(role))
 	switch role {
 	case "", "organizer":
 		accountRole = models.UserRoleOrganizer
-	case "volunteer":
-		accountRole = models.UserRoleVolunteer
 	case "participant":
 		accountRole = models.UserRoleParticipant
 	default:
 		return nil, fmt.Errorf(
-			"%w: role must be organizer, volunteer, or participant",
+			"%w: role must be organizer or participant",
 			ErrInvalidInput,
 		)
 	}
@@ -135,20 +134,20 @@ func (s *AuthService) Register(
 	return user, nil
 }
 
-// Login authenticates a user and returns a signed JWT.
+// Login authenticates a user and returns a signed JWT along with the user.
 func (s *AuthService) Login(
 	ctx context.Context,
 	email, password string,
-) (string, error) {
+) (string, *models.User, error) {
 	email = strings.ToLower(strings.TrimSpace(email))
 
 	user, err := s.repo.FindByEmail(ctx, email)
 	if err != nil {
-		return "", fmt.Errorf("finding user: %w", err)
+		return "", nil, fmt.Errorf("finding user: %w", err)
 	}
 
 	if user == nil {
-		return "", ErrInvalidCredentials
+		return "", nil, ErrInvalidCredentials
 	}
 
 	err = bcrypt.CompareHashAndPassword(
@@ -156,17 +155,17 @@ func (s *AuthService) Login(
 		[]byte(password),
 	)
 	if err != nil {
-		return "", ErrInvalidCredentials
+		return "", nil, ErrInvalidCredentials
 	}
 
 	token, err := middleware.GenerateToken(
 		*user, middleware.DefaultTokenTTL,
 	)
 	if err != nil {
-		return "", fmt.Errorf("generating token: %w", err)
+		return "", nil, fmt.Errorf("generating token: %w", err)
 	}
 
-	return token, nil
+	return token, user, nil
 }
 
 // GetUser returns a user by ID for session resolution.

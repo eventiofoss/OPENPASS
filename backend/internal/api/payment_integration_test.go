@@ -733,7 +733,7 @@ func (h *paymentTestHarness) createAuthenticatedOrganizer(
 		t.Fatalf("register organizer: %v", err)
 	}
 
-	token, err := h.authSvc.Login(
+	token, _, err := h.authSvc.Login(
 		context.Background(),
 		email,
 		"secureP@ss123",

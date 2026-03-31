@@ -15,8 +15,8 @@ type CheckIn struct {
 	ScannedAt   time.Time `gorm:"not null" json:"scanned_at"`
 	CreatedAt   time.Time `json:"created_at"`
 
-	Attendee  Attendee  `gorm:"foreignKey:AttendeeID" json:"-"`
-	ScannedBy Organizer `gorm:"foreignKey:ScannedByID" json:"-"`
+	Attendee  Attendee `gorm:"foreignKey:AttendeeID" json:"-"`
+	ScannedBy User     `gorm:"foreignKey:ScannedByID" json:"-"`
 }
 
 func (CheckIn) TableName() string {

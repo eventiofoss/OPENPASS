@@ -1,6 +1,7 @@
 package api
 
 import (
+	"github.com/eventiofoss/eventio/backend/internal/repository"
 	"github.com/eventiofoss/eventio/backend/internal/service"
 	"gorm.io/gorm"
 )
@@ -15,4 +16,6 @@ type Handler struct {
 	Payment      *service.PaymentService
 	Analytics    *service.AnalyticsService
 	QR           *service.QRService
+	Volunteer    *service.VolunteerService
+	GuestRepo    *repository.AttendeeRepository
 }

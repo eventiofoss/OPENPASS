@@ -116,3 +116,35 @@ func isDuplicateAttendeeErr(err error) bool {
 		(strings.Contains(msg, "idx_attendees_event_email") ||
 			(strings.Contains(msg, "event_id") && strings.Contains(msg, "email")))
 }
+
+// GuestRegistration is a minimal projection returned for guest session lookups.
+type GuestRegistration struct {
+	EventID uuid.UUID `json:"event_id"`
+	Email   string    `json:"email"`
+	Name    string    `json:"name"`
+}
+
+// FindByGuestSession returns all registrations linked to the given guest
+// session cookie value. Used by the SSR hydration endpoint.
+func (r *AttendeeRepository) FindByGuestSession(
+	ctx context.Context,
+	sessionID string,
+) ([]GuestRegistration, error) {
+	if sessionID == "" {
+		return nil, nil
+	}
+
+	var results []GuestRegistration
+	err := r.db.WithContext(ctx).
+		Model(&models.Attendee{}).
+		Select("event_id, email, name").
+		Where("guest_session_id = ?", sessionID).
+		Order("created_at DESC").
+		Limit(50).
+		Find(&results).Error
+	if err != nil {
+		return nil, err
+	}
+
+	return results, nil
+}

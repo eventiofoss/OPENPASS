@@ -43,10 +43,11 @@ type RegistrationUserRepo interface {
 
 // RegisterAttendeeInput carries registration payload.
 type RegisterAttendeeInput struct {
-	EventID  uuid.UUID
-	Name     string
-	Email    string
-	FormData json.RawMessage
+	EventID             uuid.UUID
+	Name                string
+	Email               string
+	FormData            json.RawMessage
+	AuthenticatedUserID *uuid.UUID
 }
 
 // RegistrationService contains registration business logic.
@@ -106,22 +107,15 @@ func (s *RegistrationService) RegisterAttendee(
 	}
 
 	attendee := &models.Attendee{
-		Name:     name,
-		Email:    email,
-		FormData: formData,
-		QRHash:   uuid.NewString(),
-		Status:   models.AttendeeStatusPending,
+		Name:           name,
+		Email:          email,
+		FormData:       formData,
+		QRHash:         uuid.NewString(),
+		Status:         models.AttendeeStatusPending,
 	}
 
-	if s.userRepo != nil {
-		user, err := s.userRepo.FindByEmail(ctx, email)
-		if err != nil {
-			return nil, fmt.Errorf("looking up user by email: %w", err)
-		}
-		if user != nil {
-			userID := user.ID
-			attendee.UserID = &userID
-		}
+	if input.AuthenticatedUserID != nil {
+		attendee.UserID = input.AuthenticatedUserID
 	}
 
 	outcome, err := s.repo.CreateForEvent(ctx, input.EventID, attendee)

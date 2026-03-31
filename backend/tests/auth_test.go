@@ -154,7 +154,7 @@ func TestAuthService_Login_HappyPath(t *testing.T) {
 		t.Fatalf("setup failed: %v", err)
 	}
 
-	token, err := svc.Login(
+	token, _, err := svc.Login(
 		context.Background(),
 		"bob@example.com", "secureP@ss1",
 	)
@@ -180,7 +180,7 @@ func TestAuthService_Login_WrongPassword(t *testing.T) {
 		t.Fatalf("setup failed: %v", err)
 	}
 
-	_, err = svc.Login(
+	_, _, err = svc.Login(
 		context.Background(),
 		"carol@example.com", "wrongpassword",
 	)
@@ -196,7 +196,7 @@ func TestAuthService_Login_NonExistentUser(t *testing.T) {
 	repo := newMockRepo()
 	svc := service.NewAuthServiceWithRepo(repo)
 
-	_, err := svc.Login(
+	_, _, err := svc.Login(
 		context.Background(),
 		"nobody@example.com", "password1",
 	)

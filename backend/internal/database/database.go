@@ -51,24 +51,6 @@ func Connect(connStr string) *gorm.DB {
 
 // autoMigrate runs all database migrations for registered models.
 func autoMigrate(db *gorm.DB) error {
-	// Rename legacy organizers table to users if this is an upgraded deployment.
-	if err := db.Exec(`
-		DO $$
-		BEGIN
-			IF EXISTS (
-				SELECT 1 FROM information_schema.tables
-				WHERE table_schema = 'public' AND table_name = 'organizers'
-			) AND NOT EXISTS (
-				SELECT 1 FROM information_schema.tables
-				WHERE table_schema = 'public' AND table_name = 'users'
-			) THEN
-				ALTER TABLE organizers RENAME TO users;
-			END IF;
-		END $$;
-	`).Error; err != nil {
-		return err
-	}
-
 	// Drop old role constraints so GORM can apply the users role check.
 	if err := db.Exec("ALTER TABLE IF EXISTS users DROP CONSTRAINT IF EXISTS chk_organizers_role").Error; err != nil {
 		return err
@@ -88,5 +70,6 @@ func autoMigrate(db *gorm.DB) error {
 		&models.Payment{},
 		&models.CheckIn{},
 		&models.Export{},
+		&models.EventVolunteer{},
 	)
 }
